@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { ChevronLeft, Send, Users, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -70,6 +71,7 @@ export default function ChatScreen() {
         setSending(true);
         const msgText = text.trim();
         setText('');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
         try {
             const sentMsg = await api.chat.send(user.uid, uid, msgText);

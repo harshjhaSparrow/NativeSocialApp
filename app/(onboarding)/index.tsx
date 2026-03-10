@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView, TextInput } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Camera, Instagram, Sparkles, ChevronLeft, User as UserIcon, Calendar, Shield, CheckCircle, Briefcase } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { UserProfile, POPULAR_INTERESTS, InterestTag } from '../../types';
@@ -11,7 +13,8 @@ import Input from '../../components/ui/Input';
 const STEPS = ['Legal', 'Basic Info', 'Socials', 'Interests'];
 
 export default function Onboarding() {
-    const { user } = useAuth();
+    const { user, login } = useAuth();
+    const router = useRouter();
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -29,6 +32,10 @@ export default function Onboarding() {
     const [instagram, setInstagram] = useState('');
     const [bio, setBio] = useState('');
     const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+
+    // Date Picker State
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [dateObj, setDateObj] = useState(new Date());
 
     useEffect(() => {
         if (user?.email && !displayName) {
@@ -60,6 +67,14 @@ export default function Onboarding() {
         setSelectedInterests(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
+    };
+
+    const handleDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (selectedDate) {
+            setDateObj(selectedDate);
+            setDob(selectedDate.toISOString().split('T')[0]);
+        }
     };
 
     const handleNext = () => {
@@ -121,7 +136,9 @@ export default function Onboarding() {
             };
 
             await api.profile.createOrUpdate(user.uid, profileData);
-            // Wait for auth context to re-trigger route push naturally by changing `hasProfile`
+            // Trigger root layout profile re-check by refreshing user
+            await login({ ...user, _refresh: Date.now() } as any);
+            router.replace('/(tabs)');
         } catch (err) {
             console.error(err);
             setError("Failed to save profile. Check connection.");
@@ -206,13 +223,41 @@ export default function Onboarding() {
                             value={jobRole}
                             onChangeText={setJobRole}
                         />
-                        <Input
-                            label="Date of Birth (YYYY-MM-DD)"
-                            placeholder="YYYY-MM-DD"
-                            icon={<Calendar size={20} color="#64748b" />}
-                            value={dob}
-                            onChangeText={setDob}
-                        />
+
+                        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{ width: '100%' }}>
+                            <View pointerEvents="none">
+                                <Input
+                                    label="Date of Birth (YYYY-MM-DD)"
+                                    placeholder="YYYY-MM-DD"
+                                    icon={<Calendar size={20} color="#64748b" />}
+                                    value={dob}
+                                    onChangeText={() => { }}
+                                    editable={false}
+                                />
+                            </View>
+                        </TouchableOpacity>
+
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={dateObj}
+                                mode="date"
+                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                onChange={handleDateChange}
+                                maximumDate={new Date()} // Can't be born in the future
+                            />
+                        )}
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>BIO</Text>
+                            <TextInput
+                                style={styles.bioInput}
+                                placeholder="Tell us about yourself..."
+                                placeholderTextColor="#64748b"
+                                value={bio}
+                                onChangeText={setBio}
+                                multiline
+                            />
+                        </View>
                     </View>
                 );
 
@@ -342,6 +387,9 @@ const styles = StyleSheet.create({
     cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#1e293b', padding: 10, borderRadius: 20, borderWidth: 1, borderColor: '#334155' },
     avatarPickerTitle: { color: '#fff', fontWeight: '600', fontSize: 16, marginTop: 16 },
     avatarPickerDesc: { color: '#64748b', fontSize: 14, marginTop: 4 },
+    fieldGroup: { gap: 8, marginTop: 8 },
+    fieldLabel: { color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
+    bioInput: { backgroundColor: '#0f172a', borderWidth: 2, borderColor: '#1e293b', borderRadius: 16, color: '#fff', fontSize: 16, padding: 16, minHeight: 120, textAlignVertical: 'top', marginTop: 8, marginBottom: 16 },
     interestsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     interestButton: { width: '48%', backgroundColor: '#0f172a', padding: 16, borderRadius: 16, borderWidth: 2, borderColor: '#1e293b', flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     interestButtonSelected: { backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3b82f6' },

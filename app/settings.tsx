@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowRight, Bell, ChevronLeft, EyeOff, Ghost, Loader2, PauseCircle, Radar, Trash2 } from "lucide-react-native";
+import { Bell, ChevronLeft, PauseCircle, Radar, Trash2, ArrowRight } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { api } from "../services/api";
+import { UserProfile } from "@/types";
 
 export default function SettingsScreen() {
     const { user, logout } = useAuth();
@@ -12,7 +13,6 @@ export default function SettingsScreen() {
     const { pushToken } = useNotifications();
     const pushEnabled = !!pushToken;
 
-    const [isGhostMode, setIsGhostMode] = useState(false);
     const [isDiscoverable, setIsDiscoverable] = useState(true);
     const [discoveryRadius, setDiscoveryRadius] = useState(10);
     const [loading, setLoading] = useState(true);
@@ -24,7 +24,6 @@ export default function SettingsScreen() {
             try {
                 const profile = await api.profile.get(user.uid);
                 if (profile) {
-                    setIsGhostMode(!!profile.isGhostMode);
                     setIsDiscoverable(profile.isDiscoverable !== false);
                     setDiscoveryRadius(profile.discoveryRadius || 10);
                 }
@@ -37,16 +36,7 @@ export default function SettingsScreen() {
         fetchProfile();
     }, [user]);
 
-    const toggleGhostMode = async () => {
-        if (!user) return;
-        const newValue = !isGhostMode;
-        setIsGhostMode(newValue);
-        try {
-            await api.profile.createOrUpdate(user.uid, { isGhostMode: newValue });
-        } catch (e) {
-            setIsGhostMode(!newValue);
-        }
-    };
+
 
     const toggleDiscoverable = async () => {
         if (!user) return;
@@ -85,7 +75,7 @@ export default function SettingsScreen() {
                             const success = await api.profile.delete(user.uid);
                             if (success) {
                                 await logout();
-                                router.replace("/auth");
+                                router.replace("/(auth)/login" as any);
                             }
                         } catch (e) {
                             console.error("Account deletion failed:", e);
@@ -101,7 +91,7 @@ export default function SettingsScreen() {
 
     const handleLogout = async () => {
         await logout();
-        router.replace("/auth");
+        router.replace("/(auth)/login" as any);
     };
 
     if (loading || deletingAccount) {
@@ -187,35 +177,17 @@ export default function SettingsScreen() {
                     </View>
                 </View>
 
-                {/* PRIVACY */}
-                <View style={styles.sectionBox}>
-                    <Text style={styles.sectionTitle}>PRIVACY & SAFETY</Text>
-                    <View style={styles.card}>
-                        <View style={styles.cardRow}>
-                            <View style={[styles.iconBox, isGhostMode ? { backgroundColor: '#a855f7' } : styles.iconBoxInactive]}>
-                                {isGhostMode ? <Ghost size={20} color="#fff" /> : <EyeOff size={20} color="#94a3b8" />}
-                            </View>
-                            <View style={styles.cardTextContainer}>
-                                <Text style={styles.cardTitle}>Ghost Mode</Text>
-                                <Text style={styles.cardSubtitle}>Completely hide your presence.</Text>
-                            </View>
-                            <Switch value={isGhostMode} onValueChange={toggleGhostMode} trackColor={{ true: '#a855f7' }} />
-                        </View>
-
-                        {isGhostMode && (
-                            <View style={styles.ghostWarningBox}>
-                                <Text style={styles.ghostWarningText}>You are currently invisible.</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-
                 {/* ACCOUNT */}
                 <View style={styles.sectionBox}>
                     <Text style={styles.sectionTitle}>ACCOUNT</Text>
                     <View style={styles.cardList}>
                         <TouchableOpacity style={styles.listItem} onPress={() => router.push("/edit-profile")}>
                             <Text style={styles.listTextLight}>Edit Profile</Text>
+                            <ArrowRight size={16} color="#64748b" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.listItem} onPress={() => router.push("/blocked-users")}>
+                            <Text style={styles.listTextLight}>Blocked Users</Text>
                             <ArrowRight size={16} color="#64748b" />
                         </TouchableOpacity>
 

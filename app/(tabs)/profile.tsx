@@ -45,8 +45,8 @@ export default function ProfileScreen() {
                     const userProfile = await api.profile.get(uid);
                     setProfile(userProfile);
 
-                    if (userProfile?.incomingRequests && userProfile.incomingRequests.length > 0) {
-                        const reqs = await api.profile.getBatch(userProfile.incomingRequests);
+                    if (userProfile?.incomingRequests && userProfile?.incomingRequests?.length > 0) {
+                        const reqs = await api.profile.getBatch(userProfile?.incomingRequests);
                         setFriendRequests(reqs);
                     }
 
@@ -55,7 +55,7 @@ export default function ProfileScreen() {
 
                     // Location Name logic (simplified to skip reverse geocoding if unavailable)
                     if (userProfile?.lastLocation?.name) {
-                        setLocationName(userProfile.lastLocation.name);
+                        setLocationName(userProfile?.lastLocation?.name);
                     }
                 } catch (e) {
                     console.error(e);
@@ -81,12 +81,12 @@ export default function ProfileScreen() {
     const handleAcceptRequest = async (requesterUid: string) => {
         if (!user) return;
         try {
-            await api.friends.acceptRequest(user.uid, requesterUid);
-            setFriendRequests((prev) => prev.filter((r) => r.uid !== requesterUid));
+            await api.friends.acceptRequest(user?.uid, requesterUid);
+            setFriendRequests((prev) => prev.filter((r) => r?.uid !== requesterUid));
             setProfile((prev) => prev ? {
                 ...prev,
-                incomingRequests: prev.incomingRequests?.filter((id) => id !== requesterUid),
-                friends: [...(prev.friends || []), requesterUid]
+                incomingRequests: prev?.incomingRequests?.filter((id) => id !== requesterUid),
+                friends: [...(prev?.friends || []), requesterUid]
             } : null);
         } catch (e) {
             console.error(e);
@@ -96,11 +96,11 @@ export default function ProfileScreen() {
     const handleRejectRequest = async (requesterUid: string) => {
         if (!user) return;
         try {
-            await api.friends.rejectRequest(user.uid, requesterUid);
-            setFriendRequests((prev) => prev.filter((r) => r.uid !== requesterUid));
+            await api.friends.rejectRequest(user?.uid, requesterUid);
+            setFriendRequests((prev) => prev.filter((r) => r?.uid !== requesterUid));
             setProfile((prev) => prev ? {
                 ...prev,
-                incomingRequests: prev.incomingRequests?.filter((id) => id !== requesterUid)
+                incomingRequests: prev?.incomingRequests?.filter((id) => id !== requesterUid)
             } : null);
         } catch (e) {
             console.error(e);
@@ -112,11 +112,11 @@ export default function ProfileScreen() {
         setIsFriendsModalOpen(true);
         setFriendsLoading(true);
         try {
-            const friendsIds = profile.friends || [];
+            const friendsIds = profile?.friends || [];
             const friendsData = await api.profile.getBatch(friendsIds);
             setFriendsList(friendsData);
 
-            const pendingIds = profile.outgoingRequests || [];
+            const pendingIds = profile?.outgoingRequests || [];
             const pendingData = await api.profile.getBatch(pendingIds);
             setSentRequestsList(pendingData);
         } catch (e) {
@@ -127,17 +127,17 @@ export default function ProfileScreen() {
     };
 
     const handleLike = async (post: Post) => {
-        if (!user || !post._id) return;
-        const isLiked = post.likedBy?.includes(user.uid);
-        const newLikes = isLiked ? post.likes - 1 : post.likes + 1;
+        if (!user || !post?._id) return;
+        const isLiked = post?.likedBy?.includes(user?.uid);
+        const newLikes = isLiked ? post?.likes - 1 : post?.likes + 1;
         const newLikedBy = isLiked
-            ? post.likedBy?.filter((id) => id !== user.uid) || []
-            : [...(post.likedBy || []), user.uid];
+            ? post?.likedBy?.filter((id) => id !== user?.uid) || []
+            : [...(post?.likedBy || []), user?.uid];
 
-        setMyPosts((current) => current.map((p) => p._id === post._id ? { ...p, likes: newLikes, likedBy: newLikedBy } : p));
+        setMyPosts((current) => current.map((p) => p?._id === post?._id ? { ...p, likes: newLikes, likedBy: newLikedBy } : p));
         try {
-            const updatedData = await api.posts.toggleLike(post._id, user.uid);
-            setMyPosts((current) => current.map((p) => p._id === post._id ? { ...p, likes: updatedData.likes, likedBy: updatedData.likedBy } : p));
+            const updatedData = await api.posts.toggleLike(post?._id, user?.uid);
+            setMyPosts((current) => current.map((p) => p?._id === post?._id ? { ...p, likes: updatedData?.likes, likedBy: updatedData?.likedBy } : p));
         } catch (e) {
             // revert
         }
@@ -146,8 +146,8 @@ export default function ProfileScreen() {
     const handleAddComment = async (postId: string, text: string) => {
         if (!user) return;
         try {
-            const newComment = await api.posts.addComment(postId, user.uid, text);
-            setMyPosts((current) => current.map((p) => p._id === postId ? { ...p, comments: [...(p.comments || []), newComment] } : p));
+            const newComment = await api.posts.addComment(postId, user?.uid, text);
+            setMyPosts((current) => current.map((p) => p?._id === postId ? { ...p, comments: [...(p?.comments || []), newComment] } : p));
         } catch (e) {
             console.error(e);
         }
@@ -159,8 +159,8 @@ export default function ProfileScreen() {
             {
                 text: "Delete", style: "destructive", onPress: async () => {
                     if (!user) return;
-                    await api.posts.deletePost(postId, user.uid);
-                    setMyPosts((prev) => prev.filter((p) => p._id !== postId));
+                    await api.posts.deletePost(postId, user?.uid);
+                    setMyPosts((prev) => prev.filter((p) => p?._id !== postId));
                 }
             }
         ]);
@@ -172,87 +172,87 @@ export default function ProfileScreen() {
 
     if (loading || !profile) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles?.container}>
+            <ScrollView contentContainerStyle={styles?.scrollContent}>
 
                 {/* Header Cover */}
-                <View style={styles.coverPhoto}>
-                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <View style={styles?.coverPhoto}>
+                    <TouchableOpacity style={styles?.logoutButton} onPress={handleLogout}>
                         <LogOut size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
 
                 {/* Profile Info Card */}
-                <View style={styles.profileCard}>
-                    <View style={styles.avatarContainer}>
-                        {profile.photoURL ? (
-                            <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
+                <View style={styles?.profileCard}>
+                    <View style={styles?.avatarContainer}>
+                        {profile?.photoURL ? (
+                            <Image source={{ uri: profile?.photoURL }} style={styles?.avatarImage} />
                         ) : (
-                            <Text style={styles.avatarText}>{profile.displayName[0]}</Text>
+                            <Text style={styles?.avatarText}>{profile?.displayName?.[0]}</Text>
                         )}
-                        <View style={styles.onlineBadge} />
+                        <View style={styles?.onlineBadge} />
                     </View>
 
-                    <Text style={styles.displayName}>{profile.displayName}</Text>
+                    <Text style={styles?.displayName}>{profile?.displayName}</Text>
 
-                    <View style={styles.infoRow}>
-                        {profile.jobRole && (
-                            <View style={styles.infoPill}>
+                    <View style={styles?.infoRow}>
+                        {profile?.jobRole && (
+                            <View style={styles?.infoPill}>
                                 <Briefcase size={14} color="#e2e8f0" />
-                                <Text style={styles.infoPillText}>{profile.jobRole}</Text>
+                                <Text style={styles?.infoPillText}>{profile?.jobRole}</Text>
                             </View>
                         )}
-                        <View style={styles.infoPill}>
+                        <View style={styles?.infoPill}>
                             <MapPin size={14} color="#3b82f6" />
-                            <Text style={[styles.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
+                            <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.statsRow}>
-                        <TouchableOpacity style={styles.statButton} onPress={handleOpenFriendsList}>
+                    <View style={styles?.statsRow}>
+                        <TouchableOpacity style={styles?.statButton} onPress={handleOpenFriendsList}>
                             <Users size={16} color="#94a3b8" />
-                            <Text style={styles.statNumber}>{profile.friends?.length || 0}</Text>
-                            <Text style={styles.statLabel}>Friends</Text>
+                            <Text style={styles?.statNumber}>{profile?.friends?.length || 0}</Text>
+                            <Text style={styles?.statLabel}>Friends</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.statButton} onPress={() => setIsViewersModalOpen(true)}>
+                        <TouchableOpacity style={styles?.statButton} onPress={() => setIsViewersModalOpen(true)}>
                             <Eye size={16} color="#94a3b8" />
-                            <Text style={styles.statNumber}>{viewers?.length || 0}</Text>
-                            <Text style={styles.statLabel}>Views</Text>
+                            <Text style={styles?.statNumber}>{viewers?.length || 0}</Text>
+                            <Text style={styles?.statLabel}>Views</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.actionButtons}>
-                        <TouchableOpacity style={styles.editButton} onPress={() => router.push('/edit-profile')}>
+                    <View style={styles?.actionButtons}>
+                        <TouchableOpacity style={styles?.editButton} onPress={() => router.push('/edit-profile')}>
                             <Edit2 size={16} color="#e2e8f0" />
-                            <Text style={styles.editButtonText}>Edit</Text>
+                            <Text style={styles?.editButtonText}>Edit</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Friend Requests */}
-                {friendRequests.length > 0 && (
-                    <View style={styles.requestsSection}>
-                        <Text style={styles.sectionHeader}>Friend Requests</Text>
+                {friendRequests?.length > 0 && (
+                    <View style={styles?.requestsSection}>
+                        <Text style={styles?.sectionHeader}>Friend Requests</Text>
                         {friendRequests.map(req => (
-                            <View key={req.uid} style={styles.requestItem}>
-                                <View style={styles.requestInfo}>
-                                    <View style={styles.requestAvatar}>
-                                        {req.photoURL ? <Image source={{ uri: req.photoURL }} style={styles.avatarImage} /> : <Text style={{ color: '#94a3b8' }}>{req.displayName[0]}</Text>}
+                            <View key={req?.uid} style={styles?.requestItem}>
+                                <View style={styles?.requestInfo}>
+                                    <View style={styles?.requestAvatar}>
+                                        {req?.photoURL ? <Image source={{ uri: req?.photoURL }} style={styles?.avatarImage} /> : <Text style={{ color: '#94a3b8' }}>{req?.displayName?.[0]}</Text>}
                                     </View>
-                                    <Text style={styles.requestName}>{req.displayName}</Text>
+                                    <Text style={styles?.requestName}>{req?.displayName}</Text>
                                 </View>
-                                <View style={styles.requestActions}>
-                                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptRequest(req.uid)}>
+                                <View style={styles?.requestActions}>
+                                    <TouchableOpacity style={styles?.acceptBtn} onPress={() => handleAcceptRequest(req?.uid)}>
                                         <Check size={16} color="#fff" />
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={styles.rejectBtn} onPress={() => handleRejectRequest(req.uid)}>
+                                    <TouchableOpacity style={styles?.rejectBtn} onPress={() => handleRejectRequest(req?.uid)}>
                                         <X size={16} color="#94a3b8" />
                                     </TouchableOpacity>
                                 </View>
@@ -262,20 +262,20 @@ export default function ProfileScreen() {
                 )}
 
                 {/* Bio */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>About Me</Text>
-                    <Text style={styles.bioText}>{profile.bio || "No bio yet."}</Text>
+                <View style={styles?.section}>
+                    <Text style={styles?.sectionHeader}>About Me</Text>
+                    <Text style={styles?.bioText}>{profile?.bio || "No bio yet."}</Text>
                 </View>
 
                 {/* Interests */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>Interests</Text>
-                    <View style={styles.tagsContainer}>
+                <View style={styles?.section}>
+                    <Text style={styles?.sectionHeader}>Interests</Text>
+                    <View style={styles?.tagsContainer}>
                         {(profile.interests || []).map(id => {
-                            const tag = POPULAR_INTERESTS.find(i => i.id === id);
+                            const tag = POPULAR_INTERESTS.find(i => i?.id === id);
                             return (
-                                <View key={id} style={styles.tag}>
-                                    <Text style={styles.tagText}>{tag ? `${tag.emoji} ${tag.label}` : id}</Text>
+                                <View key={id} style={styles?.tag}>
+                                    <Text style={styles?.tagText}>{tag ? `${tag?.emoji} ${tag?.label}` : id}</Text>
                                 </View>
                             );
                         })}
@@ -283,28 +283,28 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Posts */}
-                <View style={styles.postsSection}>
-                    <View style={styles.postsHeaderRow}>
-                        <Text style={styles.postsTitle}>My Posts</Text>
-                        <View style={styles.tabsContainer}>
-                            <TouchableOpacity style={[styles.tabBtn, activeTab === 'regular' && styles.tabBtnActive]} onPress={() => setActiveTab('regular')}>
-                                <Text style={[styles.tabText, activeTab === 'regular' && styles.tabTextActive]}>Regular</Text>
+                <View style={styles?.postsSection}>
+                    <View style={styles?.postsHeaderRow}>
+                        <Text style={styles?.postsTitle}>My Posts</Text>
+                        <View style={styles?.tabsContainer}>
+                            <TouchableOpacity style={[styles?.tabBtn, activeTab === 'regular' && styles?.tabBtnActive]} onPress={() => setActiveTab('regular')}>
+                                <Text style={[styles?.tabText, activeTab === 'regular' && styles?.tabTextActive]}>Regular</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.tabBtn, activeTab === 'meetup' && styles.tabBtnActive]} onPress={() => setActiveTab('meetup')}>
-                                <Text style={[styles.tabText, activeTab === 'meetup' && styles.tabTextActive]}>Meetups</Text>
+                            <TouchableOpacity style={[styles?.tabBtn, activeTab === 'meetup' && styles?.tabBtnActive]} onPress={() => setActiveTab('meetup')}>
+                                <Text style={[styles?.tabText, activeTab === 'meetup' && styles?.tabTextActive]}>Meetups</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {filteredPosts.length === 0 ? (
-                        <View style={styles.emptyPostsBox}>
+                    {filteredPosts?.length === 0 ? (
+                        <View style={styles?.emptyPostsBox}>
                             <Edit2 size={32} color="#475569" />
-                            <Text style={styles.emptyPostsText}>No {activeTab} posts yet</Text>
+                            <Text style={styles?.emptyPostsText}>No {activeTab} posts yet</Text>
                         </View>
                     ) : (
                         filteredPosts.map(post => (
                             <PostItem
-                                key={post._id}
+                                key={post?._id}
                                 post={post}
                                 currentUserId={user?.uid}
                                 onLike={handleLike}
@@ -322,26 +322,26 @@ export default function ProfileScreen() {
           The web version has big modals for friends and viewers. Let's just create a simplified version using an absolute View.
       */}
             {isFriendsModalOpen && (
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => setIsFriendsModalOpen(false)} />
-                    <View style={styles.centeredModal}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Friends</Text>
+                <View style={styles?.modalOverlay}>
+                    <TouchableOpacity style={styles?.modalBackdrop} onPress={() => setIsFriendsModalOpen(false)} />
+                    <View style={styles?.centeredModal}>
+                        <View style={styles?.modalHeader}>
+                            <Text style={styles?.modalTitle}>Friends</Text>
                             <TouchableOpacity onPress={() => setIsFriendsModalOpen(false)}>
                                 <X size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles.modalBody}>
+                        <ScrollView style={styles?.modalBody}>
                             {friendsList.map(f => (
-                                <View key={f.uid} style={styles.modalListItem}>
-                                    <View style={styles.modalListAvatar}>
-                                        {f.photoURL ? (
-                                            <Image source={{ uri: f.photoURL }} style={styles.modalAvatarImage} />
+                                <View key={f?.uid} style={styles?.modalListItem}>
+                                    <View style={styles?.modalListAvatar}>
+                                        {f?.photoURL ? (
+                                            <Image source={{ uri: f?.photoURL }} style={styles?.modalAvatarImage} />
                                         ) : (
-                                            <Text style={styles.modalAvatarText}>{f.displayName?.[0]}</Text>
+                                            <Text style={styles?.modalAvatarText}>{f?.displayName?.[0]}</Text>
                                         )}
                                     </View>
-                                    <Text style={{ color: '#fff', fontSize: 16 }}>{f.displayName}</Text>
+                                    <Text style={{ color: '#fff', fontSize: 16 }}>{f?.displayName}</Text>
                                 </View>
                             ))}
                         </ScrollView>
@@ -350,27 +350,27 @@ export default function ProfileScreen() {
             )}
 
             {isViewersModalOpen && (
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => setIsViewersModalOpen(false)} />
-                    <View style={styles.centeredModal}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Profile Views</Text>
+                <View style={styles?.modalOverlay}>
+                    <TouchableOpacity style={styles?.modalBackdrop} onPress={() => setIsViewersModalOpen(false)} />
+                    <View style={styles?.centeredModal}>
+                        <View style={styles?.modalHeader}>
+                            <Text style={styles?.modalTitle}>Profile Views</Text>
                             <TouchableOpacity onPress={() => setIsViewersModalOpen(false)}>
                                 <X size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles.modalBody}>
+                        <ScrollView style={styles?.modalBody}>
                             {viewers.map((v, i) => (
-                                <View key={v.uid + i} style={styles.modalListItem}>
-                                    <View style={styles.modalListAvatar}>
-                                        {v.photoURL ? (
-                                            <Image source={{ uri: v.photoURL }} style={styles.modalAvatarImage} />
+                                <View key={v?.uid + i} style={styles?.modalListItem}>
+                                    <View style={styles?.modalListAvatar}>
+                                        {v?.photoURL ? (
+                                            <Image source={{ uri: v?.photoURL }} style={styles?.modalAvatarImage} />
                                         ) : (
-                                            <Text style={styles.modalAvatarText}>{v.displayName?.[0]}</Text>
+                                            <Text style={styles?.modalAvatarText}>{v?.displayName?.[0]}</Text>
                                         )}
                                     </View>
                                     <View>
-                                        <Text style={{ color: '#fff', fontSize: 16 }}>{v.displayName}</Text>
+                                        <Text style={{ color: '#fff', fontSize: 16 }}>{v?.displayName}</Text>
                                         <Text style={{ color: '#94a3b8', fontSize: 12 }}>Viewed: {new Date(v.viewedAt).toLocaleDateString()}</Text>
                                     </View>
                                 </View>

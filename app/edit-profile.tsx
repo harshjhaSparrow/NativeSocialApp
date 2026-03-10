@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, ChevronLeft, User as UserIcon, Calendar, Briefcase } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Calendar, Camera, ChevronLeft, User as UserIcon } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Input from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { UserProfile, POPULAR_INTERESTS, InterestTag } from '../types';
-import Input from '../components/ui/Input';
+import { InterestTag, POPULAR_INTERESTS, UserProfile } from '../types';
 
 export default function EditProfileScreen() {
     const { user } = useAuth();
@@ -23,6 +24,10 @@ export default function EditProfileScreen() {
     const [jobRole, setJobRole] = useState('');
     const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
+    // Date Picker State
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [dateObj, setDateObj] = useState(new Date());
+
     useEffect(() => {
         const fetchProfile = async () => {
             if (user) {
@@ -33,7 +38,10 @@ export default function EditProfileScreen() {
                         setPhotoURL(profile.photoURL || '');
                         setInstagram(profile.instagramHandle || '');
                         setBio(profile.bio || '');
-                        setDob(profile.dob || '');
+                        if (profile.dob) {
+                            setDob(profile.dob);
+                            setDateObj(new Date(profile.dob));
+                        }
                         setJobRole(profile.jobRole || '');
                         setSelectedInterests(profile.interests || []);
                     }
@@ -58,15 +66,11 @@ export default function EditProfileScreen() {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            quality: 0.8,
+            quality: 0.7,
             base64: true,
         });
 
         if (!result.canceled && result.assets[0]?.base64) {
-            if (result.assets[0].fileSize && result.assets[0].fileSize > 10 * 1024 * 1024) {
-                setError("Image is too large (Max 10MB)");
-                return;
-            }
             setPhotoURL(`data:image/jpeg;base64,${result.assets[0].base64}`);
         }
     };
@@ -75,6 +79,14 @@ export default function EditProfileScreen() {
         setSelectedInterests(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
+    };
+
+    const handleDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (selectedDate) {
+            setDateObj(selectedDate);
+            setDob(selectedDate.toISOString().split('T')[0]);
+        }
     };
 
     const calculateAge = (dateString: string) => {
@@ -200,12 +212,27 @@ export default function EditProfileScreen() {
                         value={jobRole}
                         onChangeText={setJobRole}
                     />
-                    <Input
-                        placeholder="Date of Birth (YYYY-MM-DD)"
-                        value={dob}
-                        onChangeText={setDob}
-                        keyboardType="number-pad"
-                    />
+                    <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{ width: '100%' }}>
+                        <View pointerEvents="none">
+                            <Input
+                                placeholder="Date of Birth (YYYY-MM-DD)"
+                                value={dob}
+                                icon={<Calendar size={20} color="#64748b" />}
+                                onChangeText={() => { }}
+                                editable={false}
+                            />
+                        </View>
+                    </TouchableOpacity>
+
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={dateObj}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={handleDateChange}
+                            maximumDate={new Date()} // Can't be born in the future
+                        />
+                    )}
 
                     <View style={styles.fieldGroup}>
                         <Text style={styles.fieldLabel}>BIO</Text>

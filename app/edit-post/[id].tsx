@@ -1,82 +1,51 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImagePicker from 'expo-image-picker';
-import { ChevronLeft, Image as ImageIcon, X, AlertCircle } from "lucide-react-native";
-import { useAuth } from "../../context/AuthContext";
-import { api } from "../../services/api";
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert, SafeAreaView } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ArrowLeft, Check } from 'lucide-react-native';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
+import { Post } from '../../types';
 
 export default function EditPostScreen() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id } = useLocalSearchParams();
     const { user } = useAuth();
     const router = useRouter();
 
-    const [content, setContent] = useState("");
-    const [image, setImage] = useState<string | null>(null);
+    const [post, setPost] = useState<Post | null>(null);
+    const [content, setContent] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchPost = async () => {
-            if (!id || !user) return;
+            if (!id) return;
             try {
-                const post = await api.posts.getPost(id);
-                if (post) {
-                    if (post.uid !== user.uid) {
-                        router.back();
-                        return;
-                    }
-                    setContent(post.content);
-                    setImage(post.imageURL || null);
-                } else {
-                    setError("Post not found");
+                const data = await api.posts.getPost(id as string);
+                if (data) {
+                    setPost(data);
+                    setContent(data.content || '');
                 }
             } catch (err) {
-                setError("Failed to fetch post");
+                console.error(err);
+                Alert.alert("Error", "Could not load post for editing.");
             } finally {
                 setLoading(false);
             }
         };
         fetchPost();
-    }, [id, user]);
+    }, [id]);
 
-    const handleImageUpload = async () => {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) {
-            alert("You've refused to allow this app to access your photos!");
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 0.8,
-            base64: true,
-        });
-
-        if (!result.canceled && result.assets[0]?.base64) {
-            if (result.assets[0].fileSize && result.assets[0].fileSize > 20 * 1024 * 1024) {
-                setError("Image is too large (Max 20MB)");
-                return;
-            }
-            setImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (!content.trim() && !image) return;
-        if (!user || !id) return;
+    const handleSave = async () => {
+        if (!content.trim()) return;
+        if (!user || !post?._id) return;
 
         setSaving(true);
-        setError(null);
-
         try {
-            await api.posts.updatePost(id, user.uid, content, image || undefined);
+            await api.posts.updatePost(post._id, user.uid, content, post.imageURL);
             router.back();
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            setError(err?.message || "Failed to update post.");
+            Alert.alert("Error", "Failed to update your post.");
         } finally {
             setSaving(false);
         }
@@ -84,93 +53,65 @@ export default function EditPostScreen() {
 
     if (loading) {
         return (
-            <View style={styles.center}>
+            <SafeAreaView style={styles.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
-            </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!post || post.uid !== user?.uid) {
+        return (
+            <SafeAreaView style={styles.center}>
+                <Text style={styles.errorText}>Post not found or you are not authorized to edit it.</Text>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Text style={styles.backBtnText}>Go Back</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
         );
     }
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            {/* Header */}
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-                    <ChevronLeft size={28} color="#94a3b8" />
+                    <ArrowLeft size={24} color="#f8fafc" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Edit</Text>
-                <TouchableOpacity
-                    onPress={handleSubmit}
-                    disabled={saving || (!content.trim() && !image)}
-                    style={[styles.headerBtn, { alignItems: 'flex-end', opacity: (saving || (!content.trim() && !image)) ? 0.5 : 1 }]}
-                >
-                    {saving ? (
-                        <ActivityIndicator size="small" color="#3b82f6" />
-                    ) : (
-                        <Text style={styles.headerAction}>Save</Text>
-                    )}
+                <Text style={styles.headerTitle}>Edit Post</Text>
+                <TouchableOpacity onPress={handleSave} disabled={saving || !content.trim()} style={[styles.headerBtn, (!content.trim() || saving) && { opacity: 0.5 }]}>
+                    {saving ? <ActivityIndicator size="small" color="#3b82f6" /> : <Text style={styles.saveBtnText}>Save</Text>}
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Text Area */}
+            <View style={styles.content}>
+                {post.imageURL && (
+                    <Image source={{ uri: post.imageURL }} style={styles.imagePreview} />
+                )}
+
                 <TextInput
-                    style={styles.textArea}
-                    placeholder="What's on your mind?"
-                    placeholderTextColor="#64748b"
+                    style={styles.textInput}
                     value={content}
-                    onChangeText={(txt) => { setContent(txt); setError(null); }}
+                    onChangeText={setContent}
+                    placeholder="Update your post..."
+                    placeholderTextColor="#64748b"
                     multiline
                     autoFocus
                 />
-
-                {/* Image Preview */}
-                {image && (
-                    <View style={styles.imagePreviewContainer}>
-                        <Image source={{ uri: image }} style={styles.imagePreview} />
-                        <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => setImage(null)}>
-                            <X size={20} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Error */}
-                {error && (
-                    <View style={styles.errorBox}>
-                        <AlertCircle size={20} color="#f87171" />
-                        <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                )}
-            </ScrollView>
-
-            {/* Footer Tools */}
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.actionBtn} onPress={handleImageUpload}>
-                    <ImageIcon size={20} color="#3b82f6" />
-                    <Text style={styles.actionBtnText}>Photo</Text>
-                </TouchableOpacity>
             </View>
-        </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#020617' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#020617' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 60, paddingBottom: 16, backgroundColor: 'rgba(15, 23, 42, 0.9)', borderBottomWidth: 1, borderBottomColor: '#1e293b' },
-    headerBtn: { width: 80, justifyContent: 'center' },
-    headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-    headerAction: { color: '#3b82f6', fontSize: 16, fontWeight: 'bold' },
-    scrollContent: { padding: 16, paddingBottom: 40 },
-    textArea: { color: '#fff', fontSize: 18, minHeight: 160, textAlignVertical: 'top' },
-    imagePreviewContainer: { marginTop: 24, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#1e293b', position: 'relative' },
-    imagePreview: { width: '100%', aspectRatio: 16 / 9 },
-    imageRemoveBtn: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', padding: 6, borderRadius: 16 },
-    errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)', padding: 12, borderRadius: 12, marginTop: 16 },
-    errorText: { color: '#f87171', fontSize: 14, flex: 1 },
-    footer: { flexDirection: 'row', gap: 12, padding: 16, backgroundColor: '#020617', borderTopWidth: 1, borderTopColor: '#1e293b', paddingBottom: Platform.OS === 'ios' ? 32 : 16 },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(59, 130, 246, 0.1)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
-    actionBtnText: { color: '#3b82f6', fontWeight: 'bold' }
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+    headerBtn: { padding: 8 },
+    headerTitle: { color: '#f8fafc', fontSize: 18, fontWeight: 'bold' },
+    saveBtnText: { color: '#3b82f6', fontSize: 16, fontWeight: 'bold' },
+    content: { padding: 16, flex: 1 },
+    imagePreview: { width: '100%', height: 200, borderRadius: 16, marginBottom: 16 },
+    textInput: { color: '#f8fafc', fontSize: 16, lineHeight: 24, textAlignVertical: 'top' },
+    errorText: { color: '#ef4444', fontSize: 16, textAlign: 'center', marginBottom: 16 },
+    backBtn: { backgroundColor: '#1e293b', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+    backBtnText: { color: '#f8fafc', fontSize: 14 }
 });

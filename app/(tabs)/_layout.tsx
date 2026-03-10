@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { Home, Map as MapIcon, PlusSquare, MessageCircle, User } from 'lucide-react-native';
+import { Home, Map as MapIcon, PlusSquare, MessageCircle, User, Compass } from 'lucide-react-native';
 import LocationGuard from '../../components/LocationGuard';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -56,6 +56,13 @@ export default function TabLayout() {
           options={{
             title: 'Map',
             tabBarIcon: ({ color }) => <MapIcon size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="discover"
+          options={{
+            title: 'Discover',
+            tabBarIcon: ({ color }) => <Compass size={24} color={color} />,
           }}
         />
         <Tabs.Screen

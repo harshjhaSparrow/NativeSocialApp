@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
+import * as Haptics from 'expo-haptics';
 import { MessageCircle, ChevronRight, Users, Calendar } from "lucide-react-native";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
@@ -19,9 +20,14 @@ export default function InboxScreen() {
     const router = useRouter();
     const [conversations, setConversations] = useState<InboxItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    const fetchInbox = async () => {
+    const fetchInbox = async (isRefresh = false) => {
         if (!user) return;
+        if (isRefresh) {
+            setRefreshing(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         try {
             const data = await api.chat.getInbox(user.uid);
             setConversations(data);
@@ -29,6 +35,7 @@ export default function InboxScreen() {
             console.error("Failed to load inbox", e);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -176,7 +183,12 @@ export default function InboxScreen() {
                 <Text style={styles.headerTitle}>Messages</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => fetchInbox(true)} tintColor="#3b82f6" />
+                }
+            >
                 {conversations.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <View style={styles.emptyIconBox}>

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Send, Users } from 'lucide-react-native';
+import { ChevronLeft, Crown, Send, Trash2, Users, X } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
 import { Message, Post, UserProfile } from '../../../types';
@@ -18,6 +18,8 @@ export default function GroupChatScreen() {
 
     const [groupPost, setGroupPost] = useState<Post | null>(null);
     const [groupTitle, setGroupTitle] = useState('Group Chat');
+    const [members, setMembers] = useState<UserProfile[]>([]);
+    const [showGroupInfo, setShowGroupInfo] = useState(false);
 
     useEffect(() => {
         const init = async () => {
@@ -34,6 +36,13 @@ export default function GroupChatScreen() {
                     setGroupTitle(groupData.meetupDetails.title);
                 } else if (history.length > 0 && history[0].groupTitle) {
                     setGroupTitle(history[0].groupTitle);
+                }
+
+                if (groupData) {
+                    const allMemberIds = [groupData.uid, ...(groupData.attendees || [])];
+                    const uniqueIds = Array.from(new Set(allMemberIds));
+                    const profiles = await api.profile.getBatch(uniqueIds);
+                    setMembers(profiles);
                 }
             } catch (e) {
                 console.error(e);
@@ -80,6 +89,34 @@ export default function GroupChatScreen() {
         }
     };
 
+    const handleRemoveMember = (targetUid: string) => {
+        if (!user || !groupPost) return;
+
+        Alert.alert(
+            "Remove Member",
+            "Are you sure you want to remove this user from the group?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Remove",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await api.meetups.removeAttendee(groupPost._id!, user.uid, targetUid);
+                            setMembers(prev => prev.filter(m => m.uid !== targetUid));
+                            setGroupPost(prev => prev ? {
+                                ...prev,
+                                attendees: prev.attendees?.filter(id => id !== targetUid)
+                            } : null);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -102,7 +139,7 @@ export default function GroupChatScreen() {
 
                 <TouchableOpacity
                     style={styles.headerInfo}
-                    onPress={() => alert('Group info modal not implemented')}
+                    onPress={() => setShowGroupInfo(true)}
                 >
                     <View style={styles.avatar}>
                         <Users size={20} color="#60a5fa" />
@@ -177,6 +214,83 @@ export default function GroupChatScreen() {
                     {sending ? <ActivityIndicator size="small" color="#fff" /> : <Send size={20} color="#fff" />}
                 </TouchableOpacity>
             </View>
+
+            {/* Group Info Modal */}
+            <Modal visible={showGroupInfo} animationType="slide" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Group Info</Text>
+                            <TouchableOpacity onPress={() => setShowGroupInfo(false)} style={styles.closeModalBtn}>
+                                <X size={24} color="#94a3b8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.modalScroll}>
+                            {/* Host */}
+                            <Text style={styles.sectionTitle}>HOST</Text>
+                            {members.filter(m => m.uid === groupPost?.uid).map(host => (
+                                <View key={host.uid} style={styles.memberCard}>
+                                    <View style={[styles.memberAvatar, { borderColor: 'rgba(59, 130, 246, 0.5)', borderWidth: 2 }]}>
+                                        {host.photoURL ? (
+                                            <Image source={{ uri: host.photoURL }} style={styles.avatarImage} />
+                                        ) : (
+                                            <Text style={styles.memberAvatarText}>{host.displayName[0]}</Text>
+                                        )}
+                                    </View>
+                                    <View style={styles.memberDetails}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={styles.memberName}>{host.displayName}</Text>
+                                            <Crown size={14} color="#3b82f6" style={{ marginLeft: 6 }} />
+                                        </View>
+                                        <Text style={styles.memberRole}>Event Organizer</Text>
+                                    </View>
+                                    <TouchableOpacity style={styles.viewBtn} onPress={() => { setShowGroupInfo(false); router.push(`/profile/${host.uid}`); }}>
+                                        <Text style={styles.viewBtnText}>View</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+
+                            {/* Attendees */}
+                            <View style={styles.sectionHeaderLine}>
+                                <Text style={styles.sectionTitle}>MEMBERS</Text>
+                                <Text style={styles.memberCount}>{members.filter(m => m.uid !== groupPost?.uid).length}</Text>
+                            </View>
+
+                            {members.filter(m => m.uid !== groupPost?.uid).length === 0 ? (
+                                <Text style={styles.emptyMembersText}>No other members yet.</Text>
+                            ) : (
+                                members.filter(m => m.uid !== groupPost?.uid).map(member => (
+                                    <View key={member.uid} style={styles.memberCard}>
+                                        <View style={styles.memberAvatar}>
+                                            {member.photoURL ? (
+                                                <Image source={{ uri: member.photoURL }} style={styles.avatarImage} />
+                                            ) : (
+                                                <Text style={styles.memberAvatarText}>{member.displayName[0]}</Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.memberDetails}>
+                                            <Text style={styles.memberName}>{member.displayName}</Text>
+                                        </View>
+
+                                        <View style={styles.memberActions}>
+                                            <TouchableOpacity style={styles.viewBtn} onPress={() => { setShowGroupInfo(false); router.push(`/profile/${member.uid}`); }}>
+                                                <Text style={styles.viewBtnText}>View</Text>
+                                            </TouchableOpacity>
+
+                                            {user && groupPost && user.uid === groupPost.uid && (
+                                                <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemoveMember(member.uid)}>
+                                                    <Trash2 size={16} color="#ef4444" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    </View>
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -211,5 +325,25 @@ const styles = StyleSheet.create({
     inputContainer: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, backgroundColor: '#0f172a', borderTopWidth: 1, borderTopColor: '#1e293b', paddingBottom: 24 },
     input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#020617', borderRadius: 20, borderWidth: 1, borderColor: '#1e293b', color: '#fff', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, marginRight: 12 },
     sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-    sendButtonDisabled: { opacity: 0.5 }
+    sendButtonDisabled: { opacity: 0.5 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#0f172a', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingBottom: Platform.OS === 'ios' ? 40 : 20 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+    modalTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+    closeModalBtn: { padding: 4, marginRight: -4 },
+    modalScroll: { padding: 20 },
+    sectionTitle: { color: '#64748b', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginTop: 16, letterSpacing: 1 },
+    sectionHeaderLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 4 },
+    memberCount: { color: '#475569', fontSize: 12, fontWeight: 'bold', marginTop: 4 },
+    memberCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e293b', padding: 12, borderRadius: 16, marginBottom: 8, borderWidth: 1, borderColor: '#334155' },
+    memberAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#0f172a', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    memberAvatarText: { color: '#94a3b8', fontSize: 16, fontWeight: 'bold' },
+    memberDetails: { flex: 1 },
+    memberName: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+    memberRole: { color: '#94a3b8', fontSize: 12, marginTop: 2 },
+    memberActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    viewBtn: { backgroundColor: '#0f172a', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+    viewBtnText: { color: '#94a3b8', fontSize: 13, fontWeight: '600' },
+    removeBtn: { backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: 8, borderRadius: 12 },
+    emptyMembersText: { color: '#64748b', fontSize: 14, fontStyle: 'italic', marginTop: 4 }
 });

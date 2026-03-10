@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ScrollView } from "react-native";
 import MapView, { Marker, Circle, Callout } from "react-native-maps";
 import { useRouter } from "expo-router";
-import { LocateFixed, ChevronRight, Instagram, User, X } from "lucide-react-native";
+import * as Haptics from 'expo-haptics';
+import { LocateFixed, ChevronRight, Instagram, User, X, RefreshCw } from "lucide-react-native";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import { useUserLocation } from "../../components/LocationGuard";
@@ -32,24 +33,34 @@ export default function MapScreen() {
     const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
     const [selectedUser, setSelectedUser] = useState<NearbyUser | null>(null);
     const [isListOpen, setIsListOpen] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchData = async () => {
+        try {
+            if (currentUser?.uid) {
+                const [allUsers, profile] = await Promise.all([
+                    api.profile.getAllWithLocation(currentUser.uid),
+                    api.profile.get(currentUser.uid),
+                ]);
+                setUsers(allUsers);
+                setCurrentUserProfile(profile);
+            }
+        } catch (e) {
+            console.error("Failed to load map data", e);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                if (currentUser?.uid) {
-                    const [allUsers, profile] = await Promise.all([
-                        api.profile.getAllWithLocation(currentUser.uid),
-                        api.profile.get(currentUser.uid),
-                    ]);
-                    setUsers(allUsers);
-                    setCurrentUserProfile(profile);
-                }
-            } catch (e) {
-                console.error("Failed to load map data", e);
-            }
-        };
         fetchData();
     }, [currentUser]);
+
+    const handleRefresh = () => {
+        setRefreshing(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        fetchData();
+    };
 
     const nearbyUsers = useMemo(() => {
         if (!myLocation) return [];
@@ -137,6 +148,10 @@ export default function MapScreen() {
 
             <TouchableOpacity style={styles.locateButton} onPress={handleLocateMe}>
                 <LocateFixed size={24} color="#3b82f6" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={refreshing}>
+                <RefreshCw size={24} color="#3b82f6" style={refreshing ? { opacity: 0.5 } : {}} />
             </TouchableOpacity>
 
             {/* Selected User Popup */}
@@ -245,6 +260,7 @@ const styles = StyleSheet.create({
     userMarkerImage: { width: '100%', height: '100%' },
     userMarkerText: { color: '#94a3b8', fontWeight: 'bold', fontSize: 16 },
     locateButton: { position: 'absolute', right: 16, bottom: 90, backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, borderRadius: 24, borderWidth: 1, borderColor: '#1e293b', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+    refreshButton: { position: 'absolute', right: 16, bottom: 154, backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, borderRadius: 24, borderWidth: 1, borderColor: '#1e293b', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
     selectedUserCard: { position: 'absolute', bottom: 90, left: 16, right: 16, backgroundColor: '#0f172a', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#1e293b', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 5 },
     selectedUserRow: { flexDirection: 'row', alignItems: 'center' },
     selectedUserAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#1e293b', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#334155' },

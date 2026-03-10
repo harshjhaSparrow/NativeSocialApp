@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Briefcase, MapPin, Navigation, Users, Eye, Edit2, UserPlus, LogOut, Check, MessageCircle, MoreVertical, Flag, Ban, X, Clock, UserCheck } from "lucide-react-native";
+import { Ban, Briefcase, Check, ChevronRight, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, Navigation, UserCheck, UserPlus, Users, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useUserLocation } from "../../components/LocationGuard";
+import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
-import { useUserLocation } from "../../components/LocationGuard";
+import { POPULAR_INTERESTS, Post, UserProfile } from "../../types";
 import { calculateDistance } from "../../util/location";
-import { Post, UserProfile, POPULAR_INTERESTS } from "../../types";
-import PostItem from "../../components/PostItem";
 
 export default function UserProfileScreen() {
     const { user, logout } = useAuth();
@@ -43,7 +43,7 @@ export default function UserProfileScreen() {
     const [isViewersModalOpen, setIsViewersModalOpen] = useState(false);
 
     const distance = myLocation && profile?.lastLocation
-        ? calculateDistance(myLocation.lat, myLocation.lng, profile.lastLocation.lat, profile.lastLocation.lng)
+        ? calculateDistance(myLocation?.lat, myLocation?.lng, profile?.lastLocation?.lat, profile?.lastLocation?.lng)
         : null;
 
     useEffect(() => {
@@ -70,8 +70,8 @@ export default function UserProfileScreen() {
 
                 setProfile(userProfile);
 
-                if (isOwnProfile && userProfile?.incomingRequests && userProfile.incomingRequests.length > 0) {
-                    const reqs = await api.profile.getBatch(userProfile.incomingRequests);
+                if (isOwnProfile && userProfile?.incomingRequests && userProfile?.incomingRequests?.length > 0) {
+                    const reqs = await api.profile.getBatch(userProfile?.incomingRequests);
                     setFriendRequests(reqs);
                 }
 
@@ -95,7 +95,7 @@ export default function UserProfileScreen() {
                 setMyPosts(posts);
 
                 if (userProfile?.lastLocation?.name) {
-                    setLocationName(userProfile.lastLocation.name);
+                    setLocationName(userProfile?.lastLocation?.name);
                 }
 
                 // Record profile view
@@ -143,10 +143,10 @@ export default function UserProfileScreen() {
         try {
             await api.friends.acceptRequest(myUid, target);
             if (requesterUid) {
-                setFriendRequests((prev) => prev.filter((r) => r.uid !== requesterUid));
+                setFriendRequests((prev) => prev.filter((r) => r?.uid !== requesterUid));
             } else {
                 setRelationship("friend");
-                setProfile((prev) => prev ? { ...prev, friends: [...(prev.friends || []), myUid] } : null);
+                setProfile((prev) => prev ? { ...prev, friends: [...(prev?.friends || []), myUid] } : null);
             }
         } catch (e) {
             console.error(e);
@@ -162,7 +162,7 @@ export default function UserProfileScreen() {
         try {
             await api.friends.rejectRequest(myUid, target);
             if (requesterUid) {
-                setFriendRequests((prev) => prev.filter((r) => r.uid !== requesterUid));
+                setFriendRequests((prev) => prev.filter((r) => r?.uid !== requesterUid));
             } else {
                 setRelationship("none");
             }
@@ -183,7 +183,7 @@ export default function UserProfileScreen() {
                     try {
                         await api.friends.removeFriend(myUid, profileUid);
                         setRelationship("none");
-                        setProfile((prev) => prev ? { ...prev, friends: prev.friends?.filter(f => f !== myUid) } : null);
+                        setProfile((prev) => prev ? { ...prev, friends: prev?.friends?.filter(f => f !== myUid) } : null);
                     } catch (e) {
                         console.error(e);
                     } finally {
@@ -211,39 +211,47 @@ export default function UserProfileScreen() {
         ]);
     };
 
-    const handleOpenFriendsList = async () => {
-        if (!profile) return;
-        setIsFriendsModalOpen(true);
-        setFriendsLoading(true);
-        try {
-            const friendsIds = profile.friends || [];
-            const friendsData = await api.profile.getBatch(friendsIds);
-            setFriendsList(friendsData);
+  const handleOpenFriendsList = async () => {
+    if (!profile) return;
+setFriendsList([]);
+setSentRequestsList([]);
+    setIsFriendsModalOpen(true);
+    setFriendsLoading(true);
+    
 
-            if (isOwnProfile) {
-                const pendingIds = profile.outgoingRequests || [];
-                const pendingData = await api.profile.getBatch(pendingIds);
-                setSentRequestsList(pendingData);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setFriendsLoading(false);
+    try {
+        const friendsIds = profile.friends || [];
+        const friendsData = await api.profile.getBatch(friendsIds);
+        setFriendsList(friendsData);
+
+        // only show sent requests on your own profile
+        const pendingIds = isOwnProfile ? profile.outgoingRequests || [] : [];
+
+        if (pendingIds.length > 0) {
+            const pendingData = await api.profile.getBatch(pendingIds);
+            setSentRequestsList(pendingData);
+        } else {
+            setSentRequestsList([]);
         }
-    };
 
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setFriendsLoading(false);
+    }
+};
     const handleLike = async (post: Post) => {
-        if (!myUid || !post._id) return;
-        const isLiked = post.likedBy?.includes(myUid);
-        const newLikes = isLiked ? post.likes - 1 : post.likes + 1;
+        if (!myUid || !post?._id) return;
+        const isLiked = post?.likedBy?.includes(myUid);
+        const newLikes = isLiked ? post?.likes - 1 : post?.likes + 1;
         const newLikedBy = isLiked
-            ? post.likedBy?.filter((id) => id !== myUid) || []
-            : [...(post.likedBy || []), myUid];
+            ? post?.likedBy?.filter((id) => id !== myUid) || []
+            : [...(post?.likedBy || []), myUid];
 
-        setMyPosts((current) => current.map((p) => p._id === post._id ? { ...p, likes: newLikes, likedBy: newLikedBy } : p));
+        setMyPosts((current) => current.map((p) => p?._id === post?._id ? { ...p, likes: newLikes, likedBy: newLikedBy } : p));
         try {
-            const updatedData = await api.posts.toggleLike(post._id, myUid);
-            setMyPosts((current) => current.map((p) => p._id === post._id ? { ...p, likes: updatedData.likes, likedBy: updatedData.likedBy } : p));
+            const updatedData = await api.posts.toggleLike(post?._id, myUid);
+            setMyPosts((current) => current.map((p) => p?._id === post?._id ? { ...p, likes: updatedData?.likes, likedBy: updatedData?.likedBy } : p));
         } catch (e) {
             // revert
         }
@@ -253,7 +261,7 @@ export default function UserProfileScreen() {
         if (!myUid) return;
         try {
             const newComment = await api.posts.addComment(postId, myUid, text);
-            setMyPosts((current) => current.map((p) => p._id === postId ? { ...p, comments: [...(p.comments || []), newComment] } : p));
+            setMyPosts((current) => current.map((p) => p?._id === postId ? { ...p, comments: [...(p?.comments || []), newComment] } : p));
         } catch (e) {
             console.error(e);
         }
@@ -266,7 +274,7 @@ export default function UserProfileScreen() {
                 text: "Delete", style: "destructive", onPress: async () => {
                     if (!myUid) return;
                     await api.posts.deletePost(postId, myUid);
-                    setMyPosts((prev) => prev.filter((p) => p._id !== postId));
+                    setMyPosts((prev) => prev.filter((p) => p?._id !== postId));
                 }
             }
         ]);
@@ -274,7 +282,7 @@ export default function UserProfileScreen() {
 
     if (loading || !profile) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
@@ -282,7 +290,7 @@ export default function UserProfileScreen() {
 
     if (isBlocked) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <Ban size={48} color="#ef4444" />
                 <Text style={{ color: '#ef4444', fontSize: 20, marginTop: 16 }}>You have blocked this user</Text>
             </View>
@@ -290,105 +298,105 @@ export default function UserProfileScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles?.container}>
+            <ScrollView contentContainerStyle={styles?.scrollContent}>
                 {/* Header Cover */}
-                <View style={styles.coverPhoto}>
+                <View style={styles?.coverPhoto}>
                     {isOwnProfile && (
-                        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                        <TouchableOpacity style={styles?.logoutButton} onPress={handleLogout}>
                             <LogOut size={20} color="#fff" />
                         </TouchableOpacity>
                     )}
                     {!isOwnProfile && (
-                        <TouchableOpacity style={styles.blockButton} onPress={handleBlockUser}>
+                        <TouchableOpacity style={styles?.blockButton} onPress={handleBlockUser}>
                             <Ban size={20} color="#ef4444" />
                         </TouchableOpacity>
                     )}
                 </View>
 
                 {/* Profile Info Card */}
-                <View style={styles.profileCard}>
-                    <View style={styles.avatarContainer}>
-                        {profile.photoURL ? (
-                            <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
+                <View style={styles?.profileCard}>
+                    <View style={styles?.avatarContainer}>
+                        {profile?.photoURL ? (
+                            <Image source={{ uri: profile?.photoURL }} style={styles?.avatarImage} />
                         ) : (
-                            <Text style={styles.avatarText}>{profile.displayName[0]}</Text>
+                            <Text style={styles?.avatarText}>{profile.displayName?.[0] || "U"}</Text>
                         )}
-                        <View style={styles.onlineBadge} />
+                        <View style={styles?.onlineBadge} />
                     </View>
 
-                    <Text style={styles.displayName}>{profile.displayName}</Text>
+                    <Text style={styles?.displayName}>{profile?.displayName}</Text>
 
-                    <View style={styles.infoRow}>
-                        {profile.jobRole && (
-                            <View style={styles.infoPill}>
+                    <View style={styles?.infoRow}>
+                        {profile?.jobRole && (
+                            <View style={styles?.infoPill}>
                                 <Briefcase size={14} color="#e2e8f0" />
-                                <Text style={styles.infoPillText}>{profile.jobRole}</Text>
+                                <Text style={styles?.infoPillText}>{profile?.jobRole}</Text>
                             </View>
                         )}
-                        <View style={styles.infoPill}>
+                        <View style={styles?.infoPill}>
                             <MapPin size={14} color="#3b82f6" />
-                            <Text style={[styles.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
+                            <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
                         </View>
                     </View>
 
                     {!isOwnProfile && distance && (
-                        <View style={styles.distanceBadge}>
+                        <View style={styles?.distanceBadge}>
                             <Navigation size={12} color="#3b82f6" />
-                            <Text style={styles.distanceText}>{distance} away</Text>
+                            <Text style={styles?.distanceText}>{distance} away</Text>
                         </View>
                     )}
 
-                    <View style={styles.statsRow}>
-                        <TouchableOpacity style={styles.statButton} onPress={handleOpenFriendsList}>
+                    <View style={styles?.statsRow}>
+                        <TouchableOpacity style={styles?.statButton} onPress={handleOpenFriendsList}>
                             <Users size={16} color="#94a3b8" />
-                            <Text style={styles.statNumber}>{profile.friends?.length || 0}</Text>
-                            <Text style={styles.statLabel}>Friends</Text>
+                            <Text style={styles?.statNumber}>{profile?.friends?.length || 0}</Text>
+                            <Text style={styles?.statLabel}>Friends</Text>
                         </TouchableOpacity>
                         {isOwnProfile && (
-                            <TouchableOpacity style={styles.statButton} onPress={() => setIsViewersModalOpen(true)}>
+                            <TouchableOpacity style={styles?.statButton} onPress={() => setIsViewersModalOpen(true)}>
                                 <Eye size={16} color="#94a3b8" />
-                                <Text style={styles.statNumber}>{viewers?.length || 0}</Text>
-                                <Text style={styles.statLabel}>Views</Text>
+                                <Text style={styles?.statNumber}>{viewers?.length || 0}</Text>
+                                <Text style={styles?.statLabel}>Views</Text>
                             </TouchableOpacity>
                         )}
                     </View>
 
-                    <View style={styles.actionButtons}>
+                    <View style={styles?.actionButtons}>
                         {isOwnProfile ? (
-                            <TouchableOpacity style={styles.editButton} onPress={() => router.push('/edit-profile')}>
+                            <TouchableOpacity style={styles?.editButton} onPress={() => router.push('/edit-profile')}>
                                 <Edit2 size={16} color="#e2e8f0" />
-                                <Text style={styles.editButtonText}>Edit</Text>
+                                <Text style={styles?.editButtonText}>Edit</Text>
                             </TouchableOpacity>
                         ) : (
                             <>
                                 {relationship === "none" && (
-                                    <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={handleSendRequest} disabled={actionLoading}>
+                                    <TouchableOpacity style={[styles?.actionBtn, styles?.primaryBtn]} onPress={handleSendRequest} disabled={actionLoading}>
                                         {actionLoading ? <ActivityIndicator color="#fff" size="small" /> : <UserPlus size={20} color="#fff" />}
-                                        <Text style={styles.primaryBtnText}>Add Friend</Text>
+                                        <Text style={styles?.primaryBtnText}>Add Friend</Text>
                                     </TouchableOpacity>
                                 )}
                                 {relationship === "sent" && (
-                                    <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} disabled>
+                                    <TouchableOpacity style={[styles?.actionBtn, styles?.secondaryBtn]} disabled>
                                         <Clock size={20} color="#94a3b8" />
-                                        <Text style={styles.secondaryBtnText}>Request Sent</Text>
+                                        <Text style={styles?.secondaryBtnText}>Request Sent</Text>
                                     </TouchableOpacity>
                                 )}
                                 {relationship === "received" && (
-                                    <TouchableOpacity style={[styles.actionBtn, styles.successBtn]} onPress={() => handleAcceptRequest()} disabled={actionLoading}>
+                                    <TouchableOpacity style={[styles?.actionBtn, styles?.successBtn]} onPress={() => handleAcceptRequest()} disabled={actionLoading}>
                                         {actionLoading ? <ActivityIndicator color="#fff" size="small" /> : <UserCheck size={20} color="#fff" />}
-                                        <Text style={styles.primaryBtnText}>Accept Request</Text>
+                                        <Text style={styles?.primaryBtnText}>Accept Request</Text>
                                     </TouchableOpacity>
                                 )}
                                 {relationship === "friend" && (
                                     <>
-                                        <TouchableOpacity style={[styles.actionBtn, styles.outlineBtn]} onPress={handleRemoveFriend} disabled={actionLoading}>
+                                        <TouchableOpacity style={[styles?.actionBtn, styles?.outlineBtn]} onPress={handleRemoveFriend} disabled={actionLoading}>
                                             <Check size={20} color="#3b82f6" />
-                                            <Text style={styles.outlineBtnText}>Friends</Text>
+                                            <Text style={styles?.outlineBtnText}>Friends</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={() => router.push(`/chat/${profileUid}`)}>
+                                        <TouchableOpacity style={[styles?.actionBtn, styles?.primaryBtn]} onPress={() => router.push(`/chat/${profileUid}`)}>
                                             <MessageCircle size={20} color="#fff" />
-                                            <Text style={styles.primaryBtnText}>Message</Text>
+                                            <Text style={styles?.primaryBtnText}>Message</Text>
                                         </TouchableOpacity>
                                     </>
                                 )}
@@ -398,22 +406,22 @@ export default function UserProfileScreen() {
                 </View>
 
                 {/* Friend Requests */}
-                {isOwnProfile && friendRequests.length > 0 && (
-                    <View style={styles.requestsSection}>
-                        <Text style={styles.sectionHeader}>Friend Requests</Text>
+                {isOwnProfile && friendRequests?.length > 0 && (
+                    <View style={styles?.requestsSection}>
+                        <Text style={styles?.sectionHeader}>Friend Requests</Text>
                         {friendRequests.map(req => (
-                            <View key={req.uid} style={styles.requestItem}>
-                                <TouchableOpacity style={styles.requestInfo} onPress={() => router.push(`/profile/${req.uid}` as any)}>
-                                    <View style={styles.requestAvatar}>
-                                        {req.photoURL ? <Image source={{ uri: req.photoURL }} style={styles.avatarImage} /> : <Text style={{ color: '#94a3b8' }}>{req.displayName[0]}</Text>}
+                            <View key={req?.uid} style={styles?.requestItem}>
+                                <TouchableOpacity style={styles?.requestInfo} onPress={() => router.push(`/profile/${req?.uid}` as any)}>
+                                    <View style={styles?.requestAvatar}>
+                                        {req?.photoURL ? <Image source={{ uri: req?.photoURL }} style={styles?.avatarImage} /> : <Text style={{ color: '#94a3b8' }}>{req?.displayName?.[0]}</Text>}
                                     </View>
-                                    <Text style={styles.requestName}>{req.displayName}</Text>
+                                    <Text style={styles?.requestName}>{req?.displayName}</Text>
                                 </TouchableOpacity>
-                                <View style={styles.requestActions}>
-                                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptRequest(req.uid)}>
+                                <View style={styles?.requestActions}>
+                                    <TouchableOpacity style={styles?.acceptBtn} onPress={() => handleAcceptRequest(req?.uid)}>
                                         <Check size={16} color="#fff" />
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={styles.rejectBtn} onPress={() => handleRejectRequest(req.uid)}>
+                                    <TouchableOpacity style={styles?.rejectBtn} onPress={() => handleRejectRequest(req?.uid)}>
                                         <X size={16} color="#94a3b8" />
                                     </TouchableOpacity>
                                 </View>
@@ -423,20 +431,20 @@ export default function UserProfileScreen() {
                 )}
 
                 {/* Bio */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>About Me</Text>
-                    <Text style={styles.bioText}>{profile.bio || "No bio yet."}</Text>
+                <View style={styles?.section}>
+                    <Text style={styles?.sectionHeader}>About Me</Text>
+                    <Text style={styles?.bioText}>{profile?.bio || "No bio yet."}</Text>
                 </View>
 
                 {/* Interests */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>Interests</Text>
-                    <View style={styles.tagsContainer}>
+                <View style={styles?.section}>
+                    <Text style={styles?.sectionHeader}>Interests</Text>
+                    <View style={styles?.tagsContainer}>
                         {(profile.interests || []).map(id => {
-                            const tag = POPULAR_INTERESTS.find(i => i.id === id);
+                            const tag = POPULAR_INTERESTS.find(i => i?.id === id);
                             return (
-                                <View key={id} style={styles.tag}>
-                                    <Text style={styles.tagText}>{tag ? `${tag.emoji} ${tag.label}` : id}</Text>
+                                <View key={id} style={styles?.tag}>
+                                    <Text style={styles?.tagText}>{tag ? `${tag?.emoji} ${tag?.label}` : id}</Text>
                                 </View>
                             );
                         })}
@@ -444,28 +452,28 @@ export default function UserProfileScreen() {
                 </View>
 
                 {/* Posts */}
-                <View style={styles.postsSection}>
-                    <View style={styles.postsHeaderRow}>
-                        <Text style={styles.postsTitle}>Posts</Text>
-                        <View style={styles.tabsContainer}>
-                            <TouchableOpacity style={[styles.tabBtn, activeTab === 'regular' && styles.tabBtnActive]} onPress={() => setActiveTab('regular')}>
-                                <Text style={[styles.tabText, activeTab === 'regular' && styles.tabTextActive]}>Regular</Text>
+                <View style={styles?.postsSection}>
+                    <View style={styles?.postsHeaderRow}>
+                        <Text style={styles?.postsTitle}>Posts</Text>
+                        <View style={styles?.tabsContainer}>
+                            <TouchableOpacity style={[styles?.tabBtn, activeTab === 'regular' && styles?.tabBtnActive]} onPress={() => setActiveTab('regular')}>
+                                <Text style={[styles?.tabText, activeTab === 'regular' && styles?.tabTextActive]}>Regular</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.tabBtn, activeTab === 'meetup' && styles.tabBtnActive]} onPress={() => setActiveTab('meetup')}>
-                                <Text style={[styles.tabText, activeTab === 'meetup' && styles.tabTextActive]}>Meetups</Text>
+                            <TouchableOpacity style={[styles?.tabBtn, activeTab === 'meetup' && styles?.tabBtnActive]} onPress={() => setActiveTab('meetup')}>
+                                <Text style={[styles?.tabText, activeTab === 'meetup' && styles?.tabTextActive]}>Meetups</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {filteredPosts.length === 0 ? (
-                        <View style={styles.emptyPostsBox}>
+                    {filteredPosts?.length === 0 ? (
+                        <View style={styles?.emptyPostsBox}>
                             <Edit2 size={32} color="#475569" />
-                            <Text style={styles.emptyPostsText}>No {activeTab} posts yet</Text>
+                            <Text style={styles?.emptyPostsText}>No {activeTab} posts yet</Text>
                         </View>
                     ) : (
                         filteredPosts.map(post => (
                             <PostItem
-                                key={post._id}
+                                key={post?._id}
                                 post={post}
                                 currentUserId={myUid}
                                 onLike={handleLike}
@@ -481,55 +489,173 @@ export default function UserProfileScreen() {
 
             {/* Modals */}
             {isFriendsModalOpen && (
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => setIsFriendsModalOpen(false)} />
-                    <View style={styles.centeredModal}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Friends</Text>
-                            <TouchableOpacity onPress={() => setIsFriendsModalOpen(false)}>
+              <View style={styles.modalOverlay} pointerEvents="box-none">
+
+                    {/* Backdrop */}
+                    <TouchableOpacity
+                        style={styles?.modalBackdrop}
+                        activeOpacity={1}
+                        onPress={() => setIsFriendsModalOpen(false)}
+                    />
+
+                    <View style={styles?.centeredModal}>
+
+                        {/* Header */}
+                        <View style={styles?.modalHeader}>
+                            <Text style={styles?.modalTitle}>Friends</Text>
+
+                            <TouchableOpacity
+                                onPress={() => setIsFriendsModalOpen(false)}
+                                style={{ padding: 6 }}
+                            >
                                 <X size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles.modalBody}>
-                            {friendsList.map(f => (
-                                <TouchableOpacity key={f.uid} style={styles.modalListItem} onPress={() => { setIsFriendsModalOpen(false); router.push(`/profile/${f.uid}` as any); }}>
-                                    <View style={styles.modalListAvatar}>
-                                        {f.photoURL ? (
-                                            <Image source={{ uri: f.photoURL }} style={styles.modalAvatarImage} />
-                                        ) : (
-                                            <Text style={styles.modalAvatarText}>{f.displayName?.[0]}</Text>
-                                        )}
-                                    </View>
-                                    <Text style={{ color: '#fff', fontSize: 16 }}>{f.displayName}</Text>
-                                </TouchableOpacity>
-                            ))}
+
+                        {/* Body */}
+                        <ScrollView
+                          style={styles.modalBody}
+contentContainerStyle={{ paddingBottom: 20 }}
+                        >
+                            {friendsLoading ? (
+                                <ActivityIndicator
+                                    size="large"
+                                    color="#3b82f6"
+                                    style={{ marginTop: 30 }}
+                                />
+                            ) : (
+                                <>
+                                    {/* Pending Requests */}
+                                {isOwnProfile && sentRequestsList?.length > 0 && (
+                                        <View style={{ marginBottom: 20 }}>
+
+                                            <Text style={styles?.modalSectionLabel}>
+                                                PENDING REQUESTS
+                                            </Text>
+
+                                            {sentRequestsList?.map(req => (
+                                                <View key={req?.uid} style={styles?.modalListItemPending}>
+
+                                                    <View style={styles?.modalListAvatar}>
+                                                        {req?.photoURL ? (
+                                                            <Image
+                                                                source={{ uri: req?.photoURL }}
+                                                                style={styles?.modalAvatarImage}
+                                                            />
+                                                        ) : (
+                                                            <Text style={styles?.modalAvatarText}>
+                                                                {req?.displayName?.[0]}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+
+                                                    <Text style={styles?.modalFriendName}>
+                                                        {req?.displayName}
+                                                    </Text>
+
+                                                    <Text style={styles?.sentBadgeText}>Sent</Text>
+
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )}
+
+                                    {/* Friends List */}
+                                    {friendsList?.length === 0 ? (
+                                        <View style={styles?.modalEmptyContainer}>
+                                            <Users size={42} color="#475569" />
+                                            <Text style={styles?.modalEmptyText}>
+                                                No friends yet
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        friendsList?.map(friend => (
+                                            <TouchableOpacity
+                                                key={friend?.uid}
+                                                style={styles?.modalFriendCard}
+                                                activeOpacity={0.9}
+                                                onPress={() => {
+                                                    setIsFriendsModalOpen(false);
+                                                    router.push(`/profile/${friend?.uid}` as any);
+                                                }}
+                                            >
+
+                                                {/* Avatar */}
+                                                <View style={styles?.modalListAvatarLarge}>
+                                                    {friend?.photoURL ? (
+                                                        <Image
+                                                            source={{ uri: friend?.photoURL }}
+                                                            style={styles?.modalAvatarImage}
+                                                        />
+                                                    ) : (
+                                                        <Text style={styles?.modalAvatarTextLarge}>
+                                                            {friend?.displayName?.[0]}
+                                                        </Text>
+                                                    )}
+                                                </View>
+
+                                                {/* Name + Bio */}
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles?.modalFriendName}>
+                                                        {friend?.displayName}
+                                                    </Text>
+
+                                                    <Text
+                                                        numberOfLines={1}
+                                                        style={styles?.modalFriendBio}
+                                                    >
+                                                        {friend?.bio || "No bio"}
+                                                    </Text>
+                                                </View>
+
+                                                {/* Action */}
+                                                {isOwnProfile ? (
+                                                    <TouchableOpacity
+                                                        style={styles?.modalMsgBtn}
+                                                        onPress={(e) => {
+                                                            e.stopPropagation();
+                                                            setIsFriendsModalOpen(false);
+                                                            router.push(`/chat/${friend?.uid}`);
+                                                        }}
+                                                    >
+                                                        <MessageCircle size={18} color="#fff" />
+                                                    </TouchableOpacity>
+                                                ) : (
+                                                    <ChevronRight size={20} color="#64748b" />
+                                                )}
+
+                                            </TouchableOpacity>
+                                        ))
+                                    )}
+                                </>
+                            )}
                         </ScrollView>
                     </View>
                 </View>
             )}
 
             {isViewersModalOpen && (
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => setIsViewersModalOpen(false)} />
-                    <View style={styles.centeredModal}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Profile Views</Text>
+                <View style={styles?.modalOverlay}>
+                    <TouchableOpacity style={styles?.modalBackdrop} onPress={() => setIsViewersModalOpen(false)} />
+                    <View style={styles?.centeredModal}>
+                        <View style={styles?.modalHeader}>
+                            <Text style={styles?.modalTitle}>Profile Views</Text>
                             <TouchableOpacity onPress={() => setIsViewersModalOpen(false)}>
                                 <X size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles.modalBody}>
+                        <ScrollView style={styles?.modalBody}>
                             {viewers.map((v, i) => (
-                                <TouchableOpacity key={v.uid + i} style={styles.modalListItem} onPress={() => { setIsViewersModalOpen(false); router.push(`/profile/${v.uid}` as any); }}>
-                                    <View style={styles.modalListAvatar}>
-                                        {v.photoURL ? (
-                                            <Image source={{ uri: v.photoURL }} style={styles.modalAvatarImage} />
+                                <TouchableOpacity key={v?.uid + i} style={styles?.modalListItem} onPress={() => { setIsViewersModalOpen(false); router.push(`/profile/${v?.uid}` as any); }}>
+                                    <View style={styles?.modalListAvatar}>
+                                        {v?.photoURL ? (
+                                            <Image source={{ uri: v?.photoURL }} style={styles?.modalAvatarImage} />
                                         ) : (
-                                            <Text style={styles.modalAvatarText}>{v.displayName?.[0]}</Text>
+                                            <Text style={styles?.modalAvatarText}>{v?.displayName?.[0]}</Text>
                                         )}
                                     </View>
                                     <View>
-                                        <Text style={{ color: '#fff', fontSize: 16 }}>{v.displayName}</Text>
+                                        <Text style={{ color: '#fff', fontSize: 16 }}>{v?.displayName}</Text>
                                         <Text style={{ color: '#94a3b8', fontSize: 12 }}>Viewed: {new Date(v.viewedAt).toLocaleDateString()}</Text>
                                     </View>
                                 </TouchableOpacity>
@@ -541,6 +667,8 @@ export default function UserProfileScreen() {
         </View>
     );
 }
+
+
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#020617' },
@@ -605,8 +733,65 @@ const styles = StyleSheet.create({
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
     modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
     modalBody: { padding: 16, paddingBottom: 0 },
-    modalListItem: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1e293b', borderRadius: 12, marginBottom: 8 },
+    modalListItem: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#1e293b', borderRadius: 12, marginBottom: 8 },
     modalListAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#334155', marginRight: 12, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
     modalAvatarImage: { width: '100%', height: '100%' },
-    modalAvatarText: { color: '#94a3b8', fontSize: 16, fontWeight: 'bold' }
+    modalAvatarText: { color: '#94a3b8', fontSize: 16, fontWeight: 'bold' },
+    modalFriendName: { color: '#fff', fontSize: 16, flex: 1 },
+    modalMsgBtn: { backgroundColor: '#2563eb', padding: 10, borderRadius: 20, shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+    modalMsgBtnText: { color: '#3b82f6', fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
+    modalSectionDivider: { height: 1, backgroundColor: '#1e293b', marginBottom: 12 },
+    modalSectionLabel: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 12 },
+    sentBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(251, 191, 36, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(251, 191, 36, 0.3)' },
+    sentBadgeText: { color: '#fbbf24', fontSize: 10, fontWeight: 'bold' },
+    modalEmptyText: { color: '#94a3b8', fontSize: 14, textAlign: 'center', marginTop: 20 },
+    modalFriendCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 12,
+        borderRadius: 18,
+        backgroundColor: "#1e293b",
+        borderWidth: 1,
+        borderColor: "#334155",
+        marginBottom: 10
+    },
+
+    modalListItemPending: {
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 10,
+        borderRadius: 16,
+        backgroundColor: "#1e293b",
+        borderWidth: 1,
+        borderColor: "#334155",
+        opacity: 0.7,
+        marginBottom: 8
+    },
+
+    modalListAvatarLarge: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "#0f172a",
+        marginRight: 10,
+        overflow: "hidden",
+        justifyContent: "center",
+        alignItems: "center"
+    },
+
+    modalAvatarTextLarge: {
+        color: "#94a3b8",
+        fontWeight: "bold",
+        fontSize: 18
+    },
+
+    modalFriendBio: {
+        fontSize: 12,
+        color: "#94a3b8"
+    },
+
+    modalEmptyContainer: {
+        alignItems: "center",
+        paddingVertical: 40
+    }
 });

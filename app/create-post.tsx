@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { AlertCircle, Calendar, ChevronDown, ChevronLeft, Clock, DollarSign, Image as ImageIcon, Link as LinkIcon, MapPin, PartyPopper, Type, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import DropdownPicker from "../components/ui/DropdownPicker";
 import { useUserLocation } from "../components/LocationGuard";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
@@ -25,6 +27,7 @@ export default function CreatePostScreen() {
     const [meetupTitle, setMeetupTitle] = useState("");
     const [activity, setActivity] = useState(MEETUP_ACTIVITIES[0]);
     const [feeType, setFeeType] = useState(FEE_TYPES[0]);
+    const [feeAmount, setFeeAmount] = useState("");
     // Use strings for simplicity in mobile to avoid dealing with complex DatePickers if not strictly necessary right now
     const [date, setDate] = useState("");
     const [startTime, setStartTime] = useState("");
@@ -32,6 +35,15 @@ export default function CreatePostScreen() {
     const [maxGuests, setMaxGuests] = useState("");
     const [meetupUrl, setMeetupUrl] = useState("");
 
+    // Date/Time Picker States
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [dateObj, setDateObj] = useState(new Date());
+
+    const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+    const [startTimeObj, setStartTimeObj] = useState(new Date());
+
+    const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+    const [endTimeObj, setEndTimeObj] = useState(new Date());
     useEffect(() => {
         (async () => {
             if (gpsLocation) {
@@ -63,15 +75,11 @@ export default function CreatePostScreen() {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            quality: 0.8,
+            quality: 0.7,
             base64: true,
         });
 
         if (!result.canceled && result.assets[0]?.base64) {
-            if (result.assets[0].fileSize && result.assets[0].fileSize > 20 * 1024 * 1024) {
-                setError("Image is too large (Max 20MB)");
-                return;
-            }
             setImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
         }
     };
@@ -98,15 +106,13 @@ export default function CreatePostScreen() {
                 console.warn("Could not fetch profile", e);
             }
 
-            const isGhost = !!profile?.isGhostMode;
-
             const payload: any = {
                 uid: user.uid,
                 authorName: profile?.displayName || user.email?.split("@")[0] || "User",
                 authorPhoto: profile?.photoURL || "",
                 content: postType === "regular" ? content : content || meetupTitle,
                 imageURL: image || undefined,
-                location: gpsLocation && !isGhost ? { ...gpsLocation, name: locationName } : undefined,
+                location: gpsLocation ? { ...gpsLocation, name: locationName } : undefined,
                 type: postType,
             };
 
@@ -115,6 +121,7 @@ export default function CreatePostScreen() {
                     title: meetupTitle,
                     activity,
                     feeType,
+                    feeAmount: feeType === 'Attendance fee applicable' ? feeAmount : undefined,
                     date,
                     startTime,
                     endTime,
@@ -141,15 +148,32 @@ export default function CreatePostScreen() {
         return false;
     };
 
-    // Simple cycle picker for lists
-    const cycleActivity = () => {
-        const idx = MEETUP_ACTIVITIES.indexOf(activity);
-        setActivity(MEETUP_ACTIVITIES[(idx + 1) % MEETUP_ACTIVITIES.length]);
+    const handleDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (selectedDate) {
+            setDateObj(selectedDate);
+            setDate(selectedDate.toISOString().split('T')[0]);
+        }
     };
 
-    const cycleFee = () => {
-        const idx = FEE_TYPES.indexOf(feeType);
-        setFeeType(FEE_TYPES[(idx + 1) % FEE_TYPES.length]);
+    const handleStartTimeChange = (event: any, selectedTime?: Date) => {
+        setShowStartTimePicker(false);
+        if (selectedTime) {
+            setStartTimeObj(selectedTime);
+            const hh = String(selectedTime.getHours()).padStart(2, '0');
+            const mm = String(selectedTime.getMinutes()).padStart(2, '0');
+            setStartTime(`${hh}:${mm}`);
+        }
+    };
+
+    const handleEndTimeChange = (event: any, selectedTime?: Date) => {
+        setShowEndTimePicker(false);
+        if (selectedTime) {
+            setEndTimeObj(selectedTime);
+            const hh = String(selectedTime.getHours()).padStart(2, '0');
+            const mm = String(selectedTime.getMinutes()).padStart(2, '0');
+            setEndTime(`${hh}:${mm}`);
+        }
     };
 
     return (
@@ -218,28 +242,62 @@ export default function CreatePostScreen() {
 
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>ACTIVITY</Text>
-                            <TouchableOpacity style={styles.pickerBtn} onPress={cycleActivity}>
-                                <Text style={styles.pickerText}>{activity}</Text>
-                                <ChevronDown size={20} color="#64748b" />
-                            </TouchableOpacity>
+                            <DropdownPicker
+                                value={activity}
+                                options={MEETUP_ACTIVITIES}
+                                onSelect={setActivity}
+                                placeholder="Select Activity"
+                            />
                         </View>
 
-                        <View style={styles.row}>
-                            <View style={[styles.fieldGroup, { flex: 1, marginRight: 8 }]}>
-                                <Text style={styles.fieldLabel}>DATE (YYYY-MM-DD)</Text>
-                                <View style={styles.inputWithIcon}>
-                                    <Calendar size={18} color="#64748b" />
-                                    <TextInput style={styles.inlineInput} placeholder="Date" placeholderTextColor="#64748b" value={date} onChangeText={setDate} />
-                                </View>
-                            </View>
-                            <View style={[styles.fieldGroup, { flex: 1, marginLeft: 8 }]}>
-                                <Text style={styles.fieldLabel}>TIME (HH:MM)</Text>
-                                <View style={styles.inputWithIcon}>
-                                    <Clock size={18} color="#64748b" />
-                                    <TextInput style={[styles.inlineInput, { flex: 1 }]} placeholder="Start" placeholderTextColor="#64748b" value={startTime} onChangeText={setStartTime} />
-                                    <Text style={{ color: '#64748b' }}>-</Text>
-                                    <TextInput style={[styles.inlineInput, { flex: 1, marginLeft: 8 }]} placeholder="End" placeholderTextColor="#64748b" value={endTime} onChangeText={setEndTime} />
-                                </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>DATE (YYYY-MM-DD)</Text>
+                            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.inputWithIcon, { paddingVertical: 14 }]}>
+                                <Calendar size={18} color="#64748b" />
+                                <Text style={[styles.inlineInput, { color: date ? '#fff' : '#64748b' }]}>{date || 'Select Date'}</Text>
+                            </TouchableOpacity>
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={dateObj}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={handleDateChange}
+                                    minimumDate={new Date()} // Can't schedule meetups in the past
+                                />
+                            )}
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>TIME (HH:MM)</Text>
+                            <View style={[styles.inputWithIcon, { paddingVertical: 14 }]}>
+                                <Clock size={18} color="#64748b" />
+
+                                <TouchableOpacity onPress={() => setShowStartTimePicker(true)} style={{ flex: 1 }}>
+                                    <Text style={[styles.inlineInput, { color: startTime ? '#fff' : '#64748b' }]}>{startTime || 'Start'}</Text>
+                                </TouchableOpacity>
+                                {showStartTimePicker && (
+                                    <DateTimePicker
+                                        value={startTimeObj}
+                                        mode="time"
+                                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        onChange={handleStartTimeChange}
+                                    />
+                                )}
+
+                                <Text style={{ color: '#64748b', marginHorizontal: 8 }}>-</Text>
+
+                                <TouchableOpacity onPress={() => setShowEndTimePicker(true)} style={{ flex: 1 }}>
+                                    <Text style={[styles.inlineInput, { color: endTime ? '#fff' : '#64748b' }]}>{endTime || 'End'}</Text>
+                                </TouchableOpacity>
+                                {showEndTimePicker && (
+                                    <DateTimePicker
+                                        value={endTimeObj}
+                                        mode="time"
+                                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        onChange={handleEndTimeChange}
+                                    />
+                                )}
                             </View>
                         </View>
 
@@ -253,14 +311,24 @@ export default function CreatePostScreen() {
                             </View>
                             <View style={[styles.fieldGroup, { flex: 1, marginLeft: 8 }]}>
                                 <Text style={styles.fieldLabel}>FEE TYPE</Text>
-                                <TouchableOpacity style={[styles.pickerBtn, { paddingVertical: 14 }]} onPress={cycleFee}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                        <DollarSign size={18} color="#64748b" />
-                                        <Text style={styles.pickerText}>{feeType}</Text>
-                                    </View>
-                                </TouchableOpacity>
+                                <DropdownPicker
+                                    value={feeType}
+                                    options={FEE_TYPES}
+                                    onSelect={setFeeType}
+                                    placeholder="Select Fee Type"
+                                />
                             </View>
                         </View>
+
+                        {feeType === 'Attendance fee applicable' && (
+                            <View style={styles.fieldGroup}>
+                                <Text style={styles.fieldLabel}>FEE AMOUNT</Text>
+                                <View style={styles.inputWithIcon}>
+                                    <DollarSign size={18} color="#64748b" />
+                                    <TextInput style={styles.inlineInput} placeholder="Amount" placeholderTextColor="#64748b" value={feeAmount} onChangeText={setFeeAmount} keyboardType="numeric" />
+                                </View>
+                            </View>
+                        )}
 
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>DETAILS</Text>

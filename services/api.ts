@@ -171,8 +171,11 @@ export const api = {
 
             let socket: WebSocket | null = null;
             let keepAliveInterval: any;
+            let reconnectTimeout: any;
+            let isSubscribed = true;
 
             const connect = () => {
+                if (!isSubscribed) return;
                 socket = new WebSocket(wsUrl);
 
                 socket.onopen = () => {
@@ -195,14 +198,23 @@ export const api = {
 
                 socket.onclose = () => {
                     clearInterval(keepAliveInterval);
+                    if (isSubscribed) {
+                        reconnectTimeout = setTimeout(connect, 3000);
+                    }
+                };
+
+                socket.onerror = () => {
+                    if (socket) socket.close();
                 };
             };
 
             connect();
 
             return () => {
+                isSubscribed = false;
                 if (socket) socket.close();
                 clearInterval(keepAliveInterval);
+                clearTimeout(reconnectTimeout);
             };
         },
     },

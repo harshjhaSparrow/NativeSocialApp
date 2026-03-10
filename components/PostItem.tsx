@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, Dimensions, Linking } from "react-native";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { Calendar, Clock, DollarSign, Edit, ExternalLink, Heart, MapPin, MessageCircle, Navigation, PartyPopper, Send, Trash2, UserPlus, Users } from "lucide-react-native";
 import { api } from "../services/api";
 import { useUserLocation } from "./LocationGuard";
@@ -157,7 +158,9 @@ const PostItem: React.FC<any> = ({
                             </View>
                             <View style={styles.gridItem}>
                                 <View style={styles.gridIcon}><DollarSign size={16} color="#94a3b8" /></View>
-                                <Text style={styles.gridText} numberOfLines={1}>{post?.meetupDetails?.feeType}</Text>
+                                <Text style={styles.gridText} numberOfLines={1}>
+                                    {post?.meetupDetails?.feeType} {post?.meetupDetails?.feeAmount ? `(${post.meetupDetails.feeAmount})` : ''}
+                                </Text>
                             </View>
                             {post?.meetupDetails?.maxGuests && (
                                 <View style={styles.gridItem}>
@@ -216,7 +219,13 @@ const PostItem: React.FC<any> = ({
             {/* Footer / Comments */}
             <View style={styles.footer}>
                 <View style={styles.actionsRow}>
-                    <TouchableOpacity onPress={() => onLike(post)} style={styles.likeButton}>
+                    <TouchableOpacity
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            onLike(post);
+                        }}
+                        style={styles.likeButton}
+                    >
                         <Heart size={24} color={isLiked ? "#3b82f6" : "#64748b"} fill={isLiked ? "#3b82f6" : "transparent"} />
                         <Text style={[styles.actionCount, isLiked && styles.likedText]}>{post?.likes}</Text>
                     </TouchableOpacity>

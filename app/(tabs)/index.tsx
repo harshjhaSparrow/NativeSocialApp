@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, ActivityIndicator, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, ActivityIndicator, Image, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Bell, Settings } from "lucide-react-native";
 import { useAuth } from "../../context/AuthContext";
@@ -99,6 +99,34 @@ export default function Feed() {
     }
   };
 
+  const handleDeletePost = (postId: string) => {
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!user) return;
+            try {
+              await api.posts.deletePost(postId, user.uid);
+              setPosts((current) => current.filter((p) => p._id !== postId));
+            } catch (e) {
+              console.error("Failed to delete post", e);
+              Alert.alert("Error", "Could not delete the post.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleEditPost = (postId: string) => {
+    router.push(`/edit-post/${postId}`);
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.logoContainer}>
@@ -145,6 +173,8 @@ export default function Feed() {
               currentUserId={user?.uid}
               onLike={handleLike}
               onAddComment={handleAddComment}
+              onDelete={item.uid === user?.uid ? () => handleDeletePost(item._id!) : undefined}
+              onEdit={item.uid === user?.uid ? () => handleEditPost(item._id!) : undefined}
             />
           )}
           contentContainerStyle={styles.listContent}
