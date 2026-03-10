@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Briefcase, Check, Edit2, Eye, LogOut, MapPin, Users, X } from "lucide-react-native";
+import { Briefcase, Check, Clock, Edit2, Eye, LogOut, MapPin, UserPlus, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useUserLocation } from "../../components/LocationGuard";
@@ -32,7 +32,9 @@ export default function ProfileScreen() {
     const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
     const [friendsList, setFriendsList] = useState<UserProfile[]>([]);
     const [sentRequestsList, setSentRequestsList] = useState<UserProfile[]>([]);
+    const [incomingRequestsList, setIncomingRequestsList] = useState<UserProfile[]>([]);
     const [friendsLoading, setFriendsLoading] = useState(false);
+    const [activeModalTab, setActiveModalTab] = useState<'friends' | 'incoming' | 'sent'>('friends');
 
     const [viewers, setViewers] = useState<(UserProfile & { viewedAt: number })[]>([]);
     const [isViewersModalOpen, setIsViewersModalOpen] = useState(false);
@@ -110,19 +112,41 @@ export default function ProfileScreen() {
         if (!profile) return;
         setIsFriendsModalOpen(true);
         setFriendsLoading(true);
+        setActiveModalTab('friends');
         try {
-            const friendsIds = profile?.friends || [];
-            const friendsData = await api.profile.getBatch(friendsIds);
+            const [friendsData, incomingData, sentData] = await Promise.all([
+                api.profile.getBatch(profile?.friends || []),
+                api.profile.getBatch(profile?.incomingRequests || []),
+                api.profile.getBatch(profile?.outgoingRequests || []),
+            ]);
             setFriendsList(friendsData);
-
-            const pendingIds = profile?.outgoingRequests || [];
-            const pendingData = await api.profile.getBatch(pendingIds);
-            setSentRequestsList(pendingData);
+            setIncomingRequestsList(incomingData);
+            setSentRequestsList(sentData);
         } catch (e) {
             console.error(e);
         } finally {
             setFriendsLoading(false);
         }
+    };
+
+    const handleAcceptFromModal = async (requesterUid: string) => {
+        if (!user) return;
+        try {
+            await api.friends.acceptRequest(user?.uid, requesterUid);
+            const accepted = incomingRequestsList.find(r => r?.uid === requesterUid);
+            setIncomingRequestsList(prev => prev.filter(r => r?.uid !== requesterUid));
+            setFriendRequests(prev => prev.filter(r => r?.uid !== requesterUid));
+            if (accepted) setFriendsList(prev => [...prev, accepted]);
+        } catch (e) { console.error(e); }
+    };
+
+    const handleRejectFromModal = async (requesterUid: string) => {
+        if (!user) return;
+        try {
+            await api.friends.rejectRequest(user?.uid, requesterUid);
+            setIncomingRequestsList(prev => prev.filter(r => r?.uid !== requesterUid));
+            setFriendRequests(prev => prev.filter(r => r?.uid !== requesterUid));
+        } catch (e) { console.error(e); }
     };
 
     const handleLike = async (post: Post) => {
@@ -219,6 +243,11 @@ export default function ProfileScreen() {
                             <Users size={16} color="#94a3b8" />
                             <Text style={styles?.statNumber}>{profile?.friends?.length || 0}</Text>
                             <Text style={styles?.statLabel}>Friends</Text>
+                            {friendRequests?.length > 0 && (
+                                <View style={styles?.requestBadge}>
+                                    <Text style={styles?.requestBadgeText}>{friendRequests.length}</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                         <TouchableOpacity style={styles?.statButton} onPress={() => setIsViewersModalOpen(true)}>
                             <Eye size={16} color="#94a3b8" />
@@ -330,19 +359,123 @@ export default function ProfileScreen() {
                                 <X size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles?.modalBody}>
-                            {friendsList.map(f => (
-                                <View key={f?.uid} style={styles?.modalListItem}>
-                                    <View style={styles?.modalListAvatar}>
-                                        {f?.photoURL ? (
-                                            <Image source={{ uri: f?.photoURL }} style={styles?.modalAvatarImage} resizeMode="cover" />
-                                        ) : (
-                                            <Text style={styles?.modalAvatarText}>{f?.displayName?.[0]}</Text>
-                                        )}
+
+                        {/* Tabs */}
+                        <View style={styles?.modalTabs}>
+                            <TouchableOpacity
+                                style={[styles?.modalTab, activeModalTab === 'friends' && styles?.modalTabActive]}
+                                onPress={() => setActiveModalTab('friends')}
+                            >
+                                <Text style={[styles?.modalTabText, activeModalTab === 'friends' && styles?.modalTabTextActive]}>Friends</Text>
+                                <Text style={styles?.modalTabCount}>{friendsList.length}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles?.modalTab, activeModalTab === 'incoming' && styles?.modalTabActive]}
+                                onPress={() => setActiveModalTab('incoming')}
+                            >
+                                <Text style={[styles?.modalTabText, activeModalTab === 'incoming' && styles?.modalTabTextActive]}>Requests</Text>
+                                {incomingRequestsList.length > 0 && (
+                                    <View style={styles?.modalTabBadge}>
+                                        <Text style={styles?.modalTabBadgeText}>{incomingRequestsList.length}</Text>
                                     </View>
-                                    <Text style={{ color: '#fff', fontSize: 16 }}>{f?.displayName}</Text>
-                                </View>
-                            ))}
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles?.modalTab, activeModalTab === 'sent' && styles?.modalTabActive]}
+                                onPress={() => setActiveModalTab('sent')}
+                            >
+                                <Text style={[styles?.modalTabText, activeModalTab === 'sent' && styles?.modalTabTextActive]}>Sent</Text>
+                                <Text style={styles?.modalTabCount}>{sentRequestsList.length}</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles?.modalBody}>
+                            {friendsLoading ? (
+                                <ActivityIndicator color="#3b82f6" style={{ marginTop: 24 }} />
+                            ) : (
+                                <>
+                                    {/* FRIENDS TAB */}
+                                    {activeModalTab === 'friends' && (
+                                        <>
+                                            {friendsList.length === 0 ? (
+                                                <View style={styles?.modalEmpty}>
+                                                    <Users size={36} color="#475569" />
+                                                    <Text style={styles?.modalEmptyText}>No friends yet</Text>
+                                                </View>
+                                            ) : friendsList.map(f => (
+                                                <TouchableOpacity
+                                                    key={f?.uid}
+                                                    style={styles?.modalListItem}
+                                                    onPress={() => { setIsFriendsModalOpen(false); router.push(`/profile/${f?.uid}` as any); }}
+                                                >
+                                                    <View style={styles?.modalListAvatar}>
+                                                        {f?.photoURL ? (
+                                                            <Image source={{ uri: f?.photoURL }} style={styles?.modalAvatarImage} resizeMode="cover" />
+                                                        ) : (
+                                                            <Text style={styles?.modalAvatarText}>{f?.displayName?.[0]}</Text>
+                                                        )}
+                                                    </View>
+                                                    <Text style={{ color: '#fff', fontSize: 16, flex: 1 }}>{f?.displayName}</Text>
+                                                    <Check size={16} color="#22c55e" />
+                                                </TouchableOpacity>
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {/* INCOMING REQUESTS TAB */}
+                                    {activeModalTab === 'incoming' && (
+                                        <>
+                                            {incomingRequestsList.length === 0 ? (
+                                                <View style={styles?.modalEmpty}>
+                                                    <UserPlus size={36} color="#475569" />
+                                                    <Text style={styles?.modalEmptyText}>No incoming requests</Text>
+                                                </View>
+                                            ) : incomingRequestsList.map(req => (
+                                                <View key={req?.uid} style={styles?.modalRequestItem}>
+                                                    <View style={styles?.modalListAvatar}>
+                                                        {req?.photoURL ? (
+                                                            <Image source={{ uri: req?.photoURL }} style={styles?.modalAvatarImage} resizeMode="cover" />
+                                                        ) : (
+                                                            <Text style={styles?.modalAvatarText}>{req?.displayName?.[0]}</Text>
+                                                        )}
+                                                    </View>
+                                                    <Text style={{ color: '#fff', fontSize: 15, flex: 1 }}>{req?.displayName}</Text>
+                                                    <TouchableOpacity style={styles?.acceptSmallBtn} onPress={() => handleAcceptFromModal(req?.uid)}>
+                                                        <Check size={14} color="#fff" />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity style={styles?.rejectSmallBtn} onPress={() => handleRejectFromModal(req?.uid)}>
+                                                        <X size={14} color="#94a3b8" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {/* SENT REQUESTS TAB */}
+                                    {activeModalTab === 'sent' && (
+                                        <>
+                                            {sentRequestsList.length === 0 ? (
+                                                <View style={styles?.modalEmpty}>
+                                                    <Clock size={36} color="#475569" />
+                                                    <Text style={styles?.modalEmptyText}>No pending sent requests</Text>
+                                                </View>
+                                            ) : sentRequestsList.map(req => (
+                                                <View key={req?.uid} style={styles?.modalListItem}>
+                                                    <View style={styles?.modalListAvatar}>
+                                                        {req?.photoURL ? (
+                                                            <Image source={{ uri: req?.photoURL }} style={styles?.modalAvatarImage} resizeMode="cover" />
+                                                        ) : (
+                                                            <Text style={styles?.modalAvatarText}>{req?.displayName?.[0]}</Text>
+                                                        )}
+                                                    </View>
+                                                    <Text style={{ color: '#fff', fontSize: 16, flex: 1 }}>{req?.displayName}</Text>
+                                                    <View style={styles?.pendingBadge}><Text style={styles?.pendingBadgeText}>Pending</Text></View>
+                                                </View>
+                                            ))}
+                                        </>
+                                    )}
+                                </>
+                            )}
                         </ScrollView>
                     </View>
                 </View>
@@ -435,8 +568,25 @@ const styles = StyleSheet.create({
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
     modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
     modalBody: { padding: 16, paddingBottom: 0 },
-    modalListItem: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1e293b', borderRadius: 12, marginBottom: 8 },
+    modalListItem: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#1e293b', borderRadius: 12, marginBottom: 8 },
     modalListAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#334155', marginRight: 12, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
     modalAvatarImage: { width: '100%', height: '100%' },
-    modalAvatarText: { color: '#94a3b8', fontSize: 16, fontWeight: 'bold' }
+    modalAvatarText: { color: '#94a3b8', fontSize: 16, fontWeight: 'bold' },
+    modalTabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+    modalTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 6 },
+    modalTabActive: { borderBottomWidth: 2, borderBottomColor: '#3b82f6' },
+    modalTabText: { color: '#64748b', fontWeight: '600', fontSize: 13 },
+    modalTabTextActive: { color: '#3b82f6' },
+    modalTabCount: { color: '#64748b', fontSize: 11 },
+    modalTabBadge: { backgroundColor: '#ef4444', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
+    modalTabBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+    modalEmpty: { alignItems: 'center', paddingVertical: 32, gap: 12 },
+    modalEmptyText: { color: '#64748b', fontSize: 14 },
+    modalRequestItem: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#1e293b', borderRadius: 12, marginBottom: 8, gap: 8 },
+    acceptSmallBtn: { backgroundColor: '#22c55e', padding: 6, borderRadius: 8 },
+    rejectSmallBtn: { backgroundColor: '#334155', padding: 6, borderRadius: 8 },
+    pendingBadge: { backgroundColor: 'rgba(251,191,36,0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
+    pendingBadgeText: { color: '#fbbf24', fontSize: 11, fontWeight: 'bold' },
+    requestBadge: { backgroundColor: '#ef4444', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, marginLeft: 4 },
+    requestBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
 });
