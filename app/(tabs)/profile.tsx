@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { Briefcase, MapPin, Navigation, Users, Eye, Edit2, UserPlus, LogOut, Check, MessageCircle, MoreVertical, Flag, Ban, X, Clock, UserCheck } from "lucide-react-native";
+import { Briefcase, Check, Edit2, Eye, LogOut, MapPin, Users, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useUserLocation } from "../../components/LocationGuard";
+import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
-import { useUserLocation } from "../../components/LocationGuard";
-import { calculateDistance } from "../../util/location";
-import { Post, UserProfile, POPULAR_INTERESTS } from "../../types";
-import PostItem from "../../components/PostItem";
+import { POPULAR_INTERESTS, Post, UserProfile } from "../../types";
 
 export default function ProfileScreen() {
     const { user, logout } = useAuth();
@@ -193,7 +192,7 @@ export default function ProfileScreen() {
                 <View style={styles?.profileCard}>
                     <View style={styles?.avatarContainer}>
                         {profile?.photoURL ? (
-                            <Image source={{ uri: profile?.photoURL }} style={styles?.avatarImage} />
+                            <Image source={{ uri: profile?.photoURL }} style={styles?.avatarImage} resizeMode="cover" />
                         ) : (
                             <Text style={styles?.avatarText}>{profile?.displayName?.[0]}</Text>
                         )}
@@ -244,7 +243,7 @@ export default function ProfileScreen() {
                             <View key={req?.uid} style={styles?.requestItem}>
                                 <View style={styles?.requestInfo}>
                                     <View style={styles?.requestAvatar}>
-                                        {req?.photoURL ? <Image source={{ uri: req?.photoURL }} style={styles?.avatarImage} /> : <Text style={{ color: '#94a3b8' }}>{req?.displayName?.[0]}</Text>}
+                                        {req?.photoURL ? <Image source={{ uri: req?.photoURL }} style={styles?.avatarImage} resizeMode="cover" /> : <Text style={{ color: '#94a3b8' }}>{req?.displayName?.[0]}</Text>}
                                     </View>
                                     <Text style={styles?.requestName}>{req?.displayName}</Text>
                                 </View>
@@ -336,7 +335,7 @@ export default function ProfileScreen() {
                                 <View key={f?.uid} style={styles?.modalListItem}>
                                     <View style={styles?.modalListAvatar}>
                                         {f?.photoURL ? (
-                                            <Image source={{ uri: f?.photoURL }} style={styles?.modalAvatarImage} />
+                                            <Image source={{ uri: f?.photoURL }} style={styles?.modalAvatarImage} resizeMode="cover" />
                                         ) : (
                                             <Text style={styles?.modalAvatarText}>{f?.displayName?.[0]}</Text>
                                         )}
@@ -364,7 +363,7 @@ export default function ProfileScreen() {
                                 <View key={v?.uid + i} style={styles?.modalListItem}>
                                     <View style={styles?.modalListAvatar}>
                                         {v?.photoURL ? (
-                                            <Image source={{ uri: v?.photoURL }} style={styles?.modalAvatarImage} />
+                                            <Image source={{ uri: v?.photoURL }} style={styles?.modalAvatarImage} resizeMode="cover" />
                                         ) : (
                                             <Text style={styles?.modalAvatarText}>{v?.displayName?.[0]}</Text>
                                         )}

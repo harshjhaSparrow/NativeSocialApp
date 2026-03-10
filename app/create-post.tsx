@@ -356,7 +356,7 @@ export default function CreatePostScreen() {
                 {/* Image Preview */}
                 {image && (
                     <View style={styles.imagePreviewContainer}>
-                        <Image source={{ uri: image }} style={styles.imagePreview} />
+                        <Image source={{ uri: image }} style={styles.imagePreview} resizeMode="cover" />
                         <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => setImage(null)}>
                             <X size={20} color="#fff" />
                         </TouchableOpacity>
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     inlineInput: { color: '#fff', fontSize: 14, flex: 1, marginLeft: 8 },
     detailsArea: { backgroundColor: '#0f172a', borderWidth: 2, borderColor: '#1e293b', borderRadius: 16, color: '#fff', fontSize: 16, padding: 16, minHeight: 120, textAlignVertical: 'top' },
     imagePreviewContainer: { marginTop: 24, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#1e293b' },
-    imagePreview: { width: '100%', aspectRatio: 16 / 9 },
+    imagePreview: { width: '100%', aspectRatio: 4 / 5, backgroundColor: '#1e293b' },
     imageRemoveBtn: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', padding: 6, borderRadius: 16 },
     errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)', padding: 12, borderRadius: 12, marginTop: 16 },
     errorText: { color: '#f87171', fontSize: 14, flex: 1 },

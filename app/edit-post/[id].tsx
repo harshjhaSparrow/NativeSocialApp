@@ -84,7 +84,7 @@ export default function EditPostScreen() {
 
             <View style={styles.content}>
                 {post.imageURL && (
-                    <Image source={{ uri: post.imageURL }} style={styles.imagePreview} />
+                    <Image source={{ uri: post.imageURL }} style={styles.imagePreview} resizeMode="cover" />
                 )}
 
                 <TextInput
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     headerTitle: { color: '#f8fafc', fontSize: 18, fontWeight: 'bold' },
     saveBtnText: { color: '#3b82f6', fontSize: 16, fontWeight: 'bold' },
     content: { padding: 16, flex: 1 },
-    imagePreview: { width: '100%', height: 200, borderRadius: 16, marginBottom: 16 },
+    imagePreview: { width: '100%', aspectRatio: 4 / 5, borderRadius: 16, marginBottom: 16, backgroundColor: '#1e293b' },
     textInput: { color: '#f8fafc', fontSize: 16, lineHeight: 24, textAlignVertical: 'top' },
     errorText: { color: '#ef4444', fontSize: 16, textAlign: 'center', marginBottom: 16 },
     backBtn: { backgroundColor: '#1e293b', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },

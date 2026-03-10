@@ -90,7 +90,7 @@ const PostItem: React.FC<any> = ({
                 <TouchableOpacity style={styles.headerLeft} onPress={() => router.push(`/profile/${post?.uid}`)}>
                     <View style={styles.avatar}>
                         {post?.authorPhoto ? (
-                            <Image source={{ uri: post?.authorPhoto }} style={styles.avatarImage} />
+                            <Image source={{ uri: post?.authorPhoto }} style={styles.avatarImage} resizeMode="cover" />
                         ) : (
                             <Text style={styles.avatarPlaceholder}>{post?.authorName?.[0] || "U"}</Text>
                         )}
@@ -137,7 +137,7 @@ const PostItem: React.FC<any> = ({
             {isMeetup ? (
                 <View style={styles.meetupContent}>
                     {post?.imageURL && (
-                        <Image source={{ uri: post?.imageURL }} style={styles.meetupImage} />
+                        <Image source={{ uri: post?.imageURL }} style={styles.meetupImage} resizeMode="cover" />
                     )}
 
                     <View style={styles.meetupDetailsBox}>
@@ -208,7 +208,7 @@ const PostItem: React.FC<any> = ({
             ) : (
                 <View>
                     {post?.imageURL && (
-                        <Image source={{ uri: post?.imageURL }} style={styles.postImage} />
+                        <Image source={{ uri: post?.imageURL }} style={styles.postImage} resizeMode="cover" />
                     )}
                     <View style={styles.regularContent}>
                         <Text style={styles.postBody}>{post?.content}</Text>
@@ -248,7 +248,7 @@ const PostItem: React.FC<any> = ({
                                 <View key={idx} style={styles.commentItem}>
                                     <TouchableOpacity style={styles.commentAvatar} onPress={() => router.push(`/profile/${comment?.uid}` as any)}>
                                         {comment?.authorPhoto ? (
-                                            <Image source={{ uri: comment?.authorPhoto }} style={styles.commentAvatarImage} />
+                                            <Image source={{ uri: comment?.authorPhoto }} style={styles.commentAvatarImage} resizeMode="cover" />
                                         ) : (
                                             <Text style={styles.commentAvatarText}>{comment?.authorName?.[0]}</Text>
                                         )}
@@ -532,7 +532,8 @@ const styles = StyleSheet.create({
     },
     postImage: {
         width: '100%',
-        height: width, // Square image
+        aspectRatio: 4 / 5, // Instagram 4:5 ratio for portrait flexibility
+        backgroundColor: '#1e293b',
     },
     regularContent: {
         paddingHorizontal: 16,
