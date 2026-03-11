@@ -54,9 +54,11 @@ export default function CreatePostScreen() {
                     });
                     if (reverseGeocode.length > 0) {
                         const addr = reverseGeocode[0];
-                        const city = addr.city || addr.subregion || addr.region || "Unknown Location";
+                        const city = addr.city || addr.subregion || addr.district || addr.region || "Nearby";
                         const state = addr.region || "";
-                        setLocationName(state ? `${city}, ${state}` : city);
+                        // Avoid duplicate if city === state
+                        setLocationName(state && state !== city ? `${city}, ${state}` : city);
+
                     }
                 } catch (err) {
                     setLocationName("Nearby");

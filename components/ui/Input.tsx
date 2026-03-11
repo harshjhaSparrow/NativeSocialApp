@@ -1,99 +1,82 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, TextInput, Text, View, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
+import { colors, typography, radii, spacing, animation } from '../../constants/theme';
 
 interface InputProps extends TextInputProps {
     label?: string;
     error?: string;
     icon?: React.ReactNode;
+    trailingIcon?: React.ReactNode;
+    containerStyle?: ViewStyle;
 }
 
-const Input: React.FC<InputProps> = ({ label, error, icon, style, ...props }) => {
-    const [isFocused, setIsFocused] = useState(false);
+export default function Input({ label, error, icon, trailingIcon, containerStyle, style, onFocus, onBlur, ...rest }: InputProps) {
+    const borderAnim = useRef(new Animated.Value(0)).current;
+
+    const handleFocus = (e: any) => {
+        Animated.spring(borderAnim, { toValue: 1, useNativeDriver: false, ...animation.spring.soft }).start();
+        onFocus?.(e);
+    };
+
+    const handleBlur = (e: any) => {
+        Animated.spring(borderAnim, { toValue: 0, useNativeDriver: false, ...animation.spring.soft }).start();
+        onBlur?.(e);
+    };
+
+    const borderColor = borderAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [colors.border0, colors.primary],
+    });
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.wrapper, containerStyle]}>
             {label && <Text style={styles.label}>{label}</Text>}
-
-            <View style={[
-                styles.inputWrapper,
-                isFocused && styles.inputWrapperFocused,
-                !!error && styles.inputWrapperError
-            ]}>
-                {icon && <View style={styles.iconContainer}>{icon}</View>}
-
+            <Animated.View style={[styles.container, { borderColor }, error ? { borderColor: colors.danger } : null]}>
+                {icon && <View style={styles.iconSlot}>{icon}</View>}
                 <TextInput
-                    style={[
-                        styles.input,
-                        icon && styles.inputWithIcon,
-                        style
-                    ]}
-                    placeholderTextColor="#64748b" // slate-500
-                    onFocus={(e) => {
-                        setIsFocused(true);
-                        props.onFocus?.(e);
-                    }}
-                    onBlur={(e) => {
-                        setIsFocused(false);
-                        props.onBlur?.(e);
-                    }}
-                    {...props}
+                    style={[styles.input, style]}
+                    placeholderTextColor={colors.textTertiary}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    {...rest}
                 />
-            </View>
-
+                {trailingIcon && <View style={styles.iconSlot}>{trailingIcon}</View>}
+            </Animated.View>
             {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
-};
+}
 
 const styles = StyleSheet.create({
-    container: {
-        width: '100%',
-        marginBottom: 16,
-    },
+    wrapper: { gap: spacing.s1 },
     label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#cbd5e1', // slate-300
-        marginLeft: 4,
-        marginBottom: 8,
+        color: colors.textSecondary,
+        fontSize: typography.size.sm,
+        fontWeight: typography.weight.semibold,
+        letterSpacing: typography.tracking.wide,
+        textTransform: 'uppercase',
+        marginLeft: spacing.s1,
     },
-    inputWrapper: {
+    container: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#0f172a', // slate-900
-        borderWidth: 2,
-        borderColor: '#1e293b', // slate-800
-        borderRadius: 16,
-        position: 'relative',
-    },
-    inputWrapperFocused: {
-        borderColor: '#3b82f6', // primary-500
-    },
-    inputWrapperError: {
-        borderColor: '#ef4444', // red-500
-    },
-    iconContainer: {
-        position: 'absolute',
-        left: 16,
-        zIndex: 1,
+        backgroundColor: colors.bg4,
+        borderWidth: 1.5,
+        borderRadius: radii.r4,
+        paddingHorizontal: spacing.s3,
+        minHeight: 48,
+        gap: spacing.s2,
     },
     input: {
         flex: 1,
-        height: 56,
-        color: '#ffffff',
-        fontSize: 16,
-        paddingHorizontal: 16,
+        color: colors.textPrimary,
+        fontSize: typography.size.base,
+        paddingVertical: spacing.s3,
     },
-    inputWithIcon: {
-        paddingLeft: 48,
-    },
+    iconSlot: { opacity: 0.7 },
     errorText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#f87171', // red-400
-        marginLeft: 4,
-        marginTop: 8,
-    }
+        color: colors.danger,
+        fontSize: typography.size.xs,
+        marginLeft: spacing.s1,
+    },
 });
-
-export default Input;

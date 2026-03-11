@@ -98,7 +98,7 @@ export default function BlockedUsersScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#020617' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#020617' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 60, paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
     backButton: { width: 40, alignItems: 'flex-start' },
     headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
     scrollArea: { padding: 16, paddingBottom: 60 },

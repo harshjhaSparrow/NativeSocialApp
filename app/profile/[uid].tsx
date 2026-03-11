@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ban, Briefcase, Check, ChevronRight, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, Navigation, UserCheck, UserPlus, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as LocationExpo from 'expo-location';
 import { useUserLocation } from "../../components/LocationGuard";
 import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
@@ -25,7 +26,7 @@ export default function UserProfileScreen() {
     const [myPosts, setMyPosts] = useState<Post[]>([]);
     const filteredPosts = myPosts?.filter((post) => post?.type === activeTab) || [];
 
-    const [locationName, setLocationName] = useState<string>("Unknown Location");
+    const [locationName, setLocationName] = useState<string>("");
     const [friendRequests, setFriendRequests] = useState<UserProfile[]>([]);
 
     // Relationship state
@@ -94,8 +95,29 @@ export default function UserProfileScreen() {
                 const posts = await api.posts.getUserPosts(profileUid);
                 setMyPosts(posts);
 
-                if (userProfile?.lastLocation?.name) {
-                    setLocationName(userProfile?.lastLocation?.name);
+                // Location name: use stored name, reverse geocode, or omit
+                const loc = userProfile?.lastLocation;
+                if (loc?.name) {
+                    setLocationName(loc.name);
+                } else if (loc?.lat && loc?.lng) {
+                    try {
+                        const results = await LocationExpo.reverseGeocodeAsync({ latitude: loc.lat, longitude: loc.lng });
+                        if (results && results.length > 0) {
+                            const addr = results[0];
+                            const city = addr.city || addr.subregion || addr.district || addr.region || '';
+                            const state = addr.region || '';
+                            const name = (city && state && city !== state) ? `${city}, ${state}` : city || state || 'Nearby';
+                            setLocationName(name);
+                            // Cache it so future loads skip geocoding
+                            if (profileUid) api.profile.createOrUpdate(profileUid, { lastLocation: { ...loc, name } }).catch(() => { });
+                        } else {
+                            setLocationName('Nearby');
+                        }
+                    } catch (_) {
+                        setLocationName('Nearby');
+                    }
+                } else {
+                    setLocationName('');
                 }
 
                 // Record profile view
@@ -211,35 +233,35 @@ export default function UserProfileScreen() {
         ]);
     };
 
-  const handleOpenFriendsList = async () => {
-    if (!profile) return;
-setFriendsList([]);
-setSentRequestsList([]);
-    setIsFriendsModalOpen(true);
-    setFriendsLoading(true);
-    
+    const handleOpenFriendsList = async () => {
+        if (!profile) return;
+        setFriendsList([]);
+        setSentRequestsList([]);
+        setIsFriendsModalOpen(true);
+        setFriendsLoading(true);
 
-    try {
-        const friendsIds = profile.friends || [];
-        const friendsData = await api.profile.getBatch(friendsIds);
-        setFriendsList(friendsData);
 
-        // only show sent requests on your own profile
-        const pendingIds = isOwnProfile ? profile.outgoingRequests || [] : [];
+        try {
+            const friendsIds = profile.friends || [];
+            const friendsData = await api.profile.getBatch(friendsIds);
+            setFriendsList(friendsData);
 
-        if (pendingIds.length > 0) {
-            const pendingData = await api.profile.getBatch(pendingIds);
-            setSentRequestsList(pendingData);
-        } else {
-            setSentRequestsList([]);
+            // only show sent requests on your own profile
+            const pendingIds = isOwnProfile ? profile.outgoingRequests || [] : [];
+
+            if (pendingIds.length > 0) {
+                const pendingData = await api.profile.getBatch(pendingIds);
+                setSentRequestsList(pendingData);
+            } else {
+                setSentRequestsList([]);
+            }
+
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setFriendsLoading(false);
         }
-
-    } catch (e) {
-        console.error(e);
-    } finally {
-        setFriendsLoading(false);
-    }
-};
+    };
     const handleLike = async (post: Post) => {
         if (!myUid || !post?._id) return;
         const isLiked = post?.likedBy?.includes(myUid);
@@ -334,10 +356,12 @@ setSentRequestsList([]);
                                 <Text style={styles?.infoPillText}>{profile?.jobRole}</Text>
                             </View>
                         )}
-                        <View style={styles?.infoPill}>
-                            <MapPin size={14} color="#3b82f6" />
-                            <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
-                        </View>
+                        {locationName ? (
+                            <View style={styles?.infoPill}>
+                                <MapPin size={14} color="#3b82f6" />
+                                <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
+                            </View>
+                        ) : null}
                     </View>
 
                     {!isOwnProfile && distance && (
@@ -489,7 +513,7 @@ setSentRequestsList([]);
 
             {/* Modals */}
             {isFriendsModalOpen && (
-              <View style={styles.modalOverlay} pointerEvents="box-none">
+                <View style={styles.modalOverlay} pointerEvents="box-none">
 
                     {/* Backdrop */}
                     <TouchableOpacity
@@ -514,8 +538,8 @@ setSentRequestsList([]);
 
                         {/* Body */}
                         <ScrollView
-                          style={styles.modalBody}
-contentContainerStyle={{ paddingBottom: 20 }}
+                            style={styles.modalBody}
+                            contentContainerStyle={{ paddingBottom: 20 }}
                         >
                             {friendsLoading ? (
                                 <ActivityIndicator
@@ -526,7 +550,7 @@ contentContainerStyle={{ paddingBottom: 20 }}
                             ) : (
                                 <>
                                     {/* Pending Requests */}
-                                {isOwnProfile && sentRequestsList?.length > 0 && (
+                                    {isOwnProfile && sentRequestsList?.length > 0 && (
                                         <View style={{ marginBottom: 20 }}>
 
                                             <Text style={styles?.modalSectionLabel}>

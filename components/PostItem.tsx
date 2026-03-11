@@ -6,6 +6,7 @@ import { Calendar, Clock, DollarSign, Edit, ExternalLink, Heart, MapPin, Message
 import { api } from "../services/api";
 import { useUserLocation } from "./LocationGuard";
 import { calculateDistance } from "../util/location";
+import { colors, typography, spacing, radii } from "../constants/theme";
 
 const { width } = Dimensions.get('window');
 

@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { Briefcase, Check, Clock, Edit2, Eye, LogOut, MapPin, UserPlus, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as LocationExpo from 'expo-location';
 import { useUserLocation } from "../../components/LocationGuard";
 import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
@@ -25,7 +26,7 @@ export default function ProfileScreen() {
     const [myPosts, setMyPosts] = useState<Post[]>([]);
     const filteredPosts = myPosts?.filter((post) => post?.type === activeTab);
 
-    const [locationName, setLocationName] = useState<string>("Unknown Location");
+    const [locationName, setLocationName] = useState<string>("");
     const [friendRequests, setFriendRequests] = useState<UserProfile[]>([]);
 
     // Modals
@@ -54,9 +55,29 @@ export default function ProfileScreen() {
                     const posts = await api.posts.getUserPosts(uid);
                     setMyPosts(posts);
 
-                    // Location Name logic (simplified to skip reverse geocoding if unavailable)
-                    if (userProfile?.lastLocation?.name) {
-                        setLocationName(userProfile?.lastLocation?.name);
+                    // Location name: use stored name, reverse geocode, or omit
+                    const loc = userProfile?.lastLocation;
+                    if (loc?.name) {
+                        setLocationName(loc.name);
+                    } else if (loc?.lat && loc?.lng) {
+                        try {
+                            const results = await LocationExpo.reverseGeocodeAsync({ latitude: loc.lat, longitude: loc.lng });
+                            if (results && results.length > 0) {
+                                const addr = results[0];
+                                const city = addr.city || addr.subregion || addr.district || addr.region || '';
+                                const state = addr.region || '';
+                                const name = (city && state && city !== state) ? `${city}, ${state}` : city || state || 'Nearby';
+                                setLocationName(name);
+                                // Cache it on the profile so we don't geocode again
+                                if (uid) api.profile.createOrUpdate(uid, { lastLocation: { ...loc, name } }).catch(() => { });
+                            } else {
+                                setLocationName('Nearby');
+                            }
+                        } catch (_) {
+                            setLocationName('Nearby');
+                        }
+                    } else {
+                        setLocationName('');
                     }
                 } catch (e) {
                     console.error(e);
@@ -232,10 +253,12 @@ export default function ProfileScreen() {
                                 <Text style={styles?.infoPillText}>{profile?.jobRole}</Text>
                             </View>
                         )}
-                        <View style={styles?.infoPill}>
-                            <MapPin size={14} color="#3b82f6" />
-                            <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
-                        </View>
+                        {locationName ? (
+                            <View style={styles?.infoPill}>
+                                <MapPin size={14} color="#3b82f6" />
+                                <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
+                            </View>
+                        ) : null}
                     </View>
 
                     <View style={styles?.statsRow}>

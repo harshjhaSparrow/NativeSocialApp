@@ -1,10 +1,65 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Text, Animated, TouchableWithoutFeedback, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Map as MapIcon, PlusSquare, MessageCircle, User, Compass } from 'lucide-react-native';
 import LocationGuard from '../../components/LocationGuard';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Tabs, useRouter } from 'expo-router';
+import { colors, radii, shadows, animation, spacing } from '../../constants/theme';
+
+// Individual tab icon with spring animation
+function AnimatedTabIcon({ focused, icon, badge }: { focused: boolean; icon: (color: string, size: number) => React.ReactNode; badge?: number | string }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.15 : 1,
+      useNativeDriver: true,
+      ...animation.spring.bounce,
+    }).start();
+    Animated.timing(opacity, {
+      toValue: focused ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [focused]);
+
+  const color = focused ? colors.primary : colors.textTertiary;
+
+  return (
+    <View style={styles.iconWrapper}>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        {icon(color, 24)}
+      </Animated.View>
+      {/* Active dot indicator */}
+      <Animated.View style={[styles.activeDot, { opacity }]} />
+      {/* Badge */}
+      {!!badge && Number(badge) > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{Number(badge) > 9 ? '9+' : badge}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Floating Create button
+function CreateButton({ onPress }: { onPress: () => void }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => Animated.spring(scale, { toValue: 0.9, useNativeDriver: true, ...animation.spring.press }).start();
+  const handlePressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, ...animation.spring.press }).start();
+
+  return (
+    <TouchableWithoutFeedback onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+      <Animated.View style={[styles.createBtn, { transform: [{ scale }] }]}>
+        <PlusSquare size={26} color={colors.white} />
+      </Animated.View>
+    </TouchableWithoutFeedback>
+  );
+}
 
 export default function TabLayout() {
   const router = useRouter();
@@ -17,11 +72,8 @@ export default function TabLayout() {
       try {
         const count = await api.chat.getUnreadCount(user.uid);
         setUnreadMessages(count);
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) { }
     };
-
     checkUnread();
     const interval = setInterval(checkUnread, 10000);
     return () => clearInterval(interval);
@@ -33,77 +85,67 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)', // slate-900
+            backgroundColor: colors.bg1,
             borderTopWidth: 1,
-            borderTopColor: '#1e293b', // slate-800
-            height: 60,
-            paddingBottom: 5,
-            paddingTop: 5,
+            borderTopColor: colors.border0,
+            height: Platform.OS === 'ios' ? 84 : 64,
+            paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+            paddingTop: 8,
             position: 'absolute',
+            ...(shadows.md as any),
           },
-          tabBarActiveTintColor: '#3b82f6',
-          tabBarInactiveTintColor: '#64748b',
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textTertiary,
+          tabBarShowLabel: false,
         }}>
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+            tabBarIcon: ({ focused }) => (
+              <AnimatedTabIcon focused={focused} icon={(c, s) => <Home size={s} color={c} />} />
+            ),
           }}
         />
         <Tabs.Screen
           name="map"
           options={{
-            title: 'Map',
-            tabBarIcon: ({ color }) => <MapIcon size={24} color={color} />,
+            tabBarIcon: ({ focused }) => (
+              <AnimatedTabIcon focused={focused} icon={(c, s) => <MapIcon size={s} color={c} />} />
+            ),
           }}
         />
         <Tabs.Screen
           name="discover"
           options={{
-            title: 'Discover',
-            tabBarIcon: ({ color }) => <Compass size={24} color={color} />,
+            tabBarIcon: ({ focused }) => (
+              <AnimatedTabIcon focused={focused} icon={(c, s) => <Compass size={s} color={c} />} />
+            ),
           }}
         />
         <Tabs.Screen
           name="create-post-tab"
           options={{
-            title: 'Create',
-            tabBarIcon: ({ color }) => (
-              <View style={styles.createButton}>
-                <PlusSquare size={24} color="#fff" />
-              </View>
-            ),
+            tabBarIcon: () => <CreateButton onPress={() => router.push('/create-post')} />,
             tabBarLabel: () => null,
           }}
           listeners={() => ({
-            tabPress: (e) => {
-              e.preventDefault();
-              router.push('/create-post');
-            },
+            tabPress: (e) => { e.preventDefault(); router.push('/create-post'); },
           })}
         />
         <Tabs.Screen
           name="inbox"
           options={{
-            title: 'Chat',
-            tabBarIcon: ({ color }) => (
-              <View>
-                <MessageCircle size={24} color={color} />
-                {unreadMessages > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
-                  </View>
-                )}
-              </View>
+            tabBarIcon: ({ focused }) => (
+              <AnimatedTabIcon focused={focused} icon={(c, s) => <MessageCircle size={s} color={c} />} badge={unreadMessages} />
             ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <User size={24} color={color} />,
+            tabBarIcon: ({ focused }) => (
+              <AnimatedTabIcon focused={focused} icon={(c, s) => <User size={s} color={c} />} />
+            ),
           }}
         />
       </Tabs>
@@ -112,38 +154,54 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  createButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
+  iconWrapper: {
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 4,
-    borderColor: '#020617',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    position: 'relative',
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: -2,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
   },
   badge: {
     position: 'absolute',
-    top: -5,
-    right: -8,
-    backgroundColor: '#3b82f6',
-    borderRadius: 10,
-    width: 18,
-    height: 18,
+    top: 2,
+    right: 2,
+    backgroundColor: colors.danger,
+    borderRadius: radii.rFull,
+    minWidth: 16,
+    height: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 3,
     borderWidth: 2,
-    borderColor: '#0f172a',
+    borderColor: colors.bg1,
   },
   badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  }
+    color: colors.white,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  createBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 3,
+    borderColor: colors.bg1,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
+  },
 });

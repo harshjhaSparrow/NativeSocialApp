@@ -6,6 +6,22 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Location } from '../types';
 
+// Helper: reverse-geocode a lat/lng to a human-readable city string
+async function reverseGeocodeCity(lat: number, lng: number): Promise<string> {
+    try {
+        const results = await LocationExpo.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        if (results && results.length > 0) {
+            const addr = results[0];
+            const city = addr.city || addr.subregion || addr.district || addr.region || '';
+            const state = addr.region || '';
+            if (city && state && city !== state) return `${city}, ${state}`;
+            if (city) return city;
+            if (state) return state;
+        }
+    } catch (_) { }
+    return 'Nearby';
+}
+
 interface LocationContextType {
     location: Location | null;
 }
@@ -38,6 +54,11 @@ const LocationGuard: React.FC<LocationGuardProps> = ({ children }) => {
                 lat: location.coords.latitude,
                 lng: location.coords.longitude,
             };
+
+            // Reverse geocode to get city name
+            const cityName = await reverseGeocodeCity(loc.lat, loc.lng);
+            loc.name = cityName;
+
             setCurrentLocation(loc);
             setHasPermission(true);
 
@@ -45,7 +66,7 @@ const LocationGuard: React.FC<LocationGuardProps> = ({ children }) => {
                 try {
                     await api.profile.createOrUpdate(user.uid, { lastLocation: loc });
                 } catch (e) {
-                    console.error("Failed to sync location array", e);
+                    console.error("Failed to sync location", e);
                 }
             }
         } catch (e) {

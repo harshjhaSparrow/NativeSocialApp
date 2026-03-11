@@ -1,131 +1,104 @@
-import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, TouchableOpacityProps, ViewStyle, TextStyle } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, TouchableWithoutFeedback, ActivityIndicator, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { colors, typography, radii, spacing, animation, MIN_TOUCH } from '../../constants/theme';
 
-interface ButtonProps extends TouchableOpacityProps {
-    children: React.ReactNode;
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-    isLoading?: boolean;
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
+type Size = 'sm' | 'md' | 'lg';
+
+interface ButtonProps {
+    label: string;
+    onPress: () => void;
+    variant?: Variant;
+    size?: Size;
+    loading?: boolean;
+    disabled?: boolean;
     fullWidth?: boolean;
+    icon?: React.ReactNode;
+    style?: ViewStyle;
 }
 
-const Button: React.FC<ButtonProps> = ({
-    children,
-    variant = 'primary',
-    isLoading = false,
-    fullWidth = false,
-    style,
-    disabled,
-    ...props
-}) => {
-    const isGlobalDisabled = disabled || isLoading;
-
-    const getContainerStyle = (): ViewStyle => {
-        switch (variant) {
-            case 'secondary': return styles.secondaryContainer;
-            case 'outline': return styles.outlineContainer;
-            case 'ghost': return styles.ghostContainer;
-            case 'primary':
-            default: return styles.primaryContainer;
-        }
-    };
-
-    const getTextStyle = (): TextStyle => {
-        switch (variant) {
-            case 'secondary': return styles.secondaryText;
-            case 'outline': return styles.outlineText;
-            case 'ghost': return styles.ghostText;
-            case 'primary':
-            default: return styles.primaryText;
-        }
-    };
-
-    return (
-        <TouchableOpacity
-            style={[
-                styles.baseContainer,
-                getContainerStyle(),
-                fullWidth && styles.fullWidth,
-                isGlobalDisabled && styles.disabledContainer,
-                style
-            ]}
-            disabled={isGlobalDisabled}
-            activeOpacity={0.8}
-            {...props}
-        >
-            {isLoading && <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? '#3b82f6' : '#ffffff'} style={styles.loader} />}
-            <Text style={[styles.baseText, getTextStyle(), isGlobalDisabled && styles.disabledText]}>
-                {children}
-            </Text>
-        </TouchableOpacity>
-    );
+const variantStyles: Record<Variant, { bg: string; border: string; text: string }> = {
+    primary: { bg: colors.primary, border: colors.primary, text: colors.white },
+    secondary: { bg: colors.bg3, border: colors.border1, text: colors.textPrimary },
+    ghost: { bg: 'transparent', border: colors.border1, text: colors.textPrimary },
+    danger: { bg: colors.dangerGlow, border: colors.danger, text: colors.danger },
+    success: { bg: colors.successGlow, border: colors.success, text: colors.success },
 };
 
+const sizeStyles: Record<Size, { height: number; px: number; fontSize: number }> = {
+    sm: { height: 36, px: spacing.s3, fontSize: typography.size.sm },
+    md: { height: MIN_TOUCH, px: spacing.s5, fontSize: typography.size.base },
+    lg: { height: 52, px: spacing.s6, fontSize: typography.size.md },
+};
+
+export default function Button({
+    label,
+    onPress,
+    variant = 'primary',
+    size = 'md',
+    loading = false,
+    disabled = false,
+    fullWidth = false,
+    icon,
+    style,
+}: ButtonProps) {
+    const scale = useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () =>
+        Animated.spring(scale, { toValue: 0.95, useNativeDriver: true, ...animation.spring.press }).start();
+    const handlePressOut = () =>
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true, ...animation.spring.press }).start();
+
+    const v = variantStyles[variant];
+    const s = sizeStyles[size];
+    const isDisabled = disabled || loading;
+
+    return (
+        <TouchableWithoutFeedback
+            onPress={onPress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            disabled={isDisabled}
+        >
+            <Animated.View
+                style={[
+                    styles.base,
+                    {
+                        backgroundColor: v.bg,
+                        borderColor: v.border,
+                        height: s.height,
+                        paddingHorizontal: s.px,
+                        transform: [{ scale }],
+                        opacity: isDisabled ? 0.5 : 1,
+                        alignSelf: fullWidth ? 'stretch' : 'flex-start',
+                    },
+                    style,
+                ]}
+            >
+                {loading ? (
+                    <ActivityIndicator size="small" color={v.text} />
+                ) : (
+                    <>
+                        {icon && <>{icon}</>}
+                        <Text style={[styles.label, { color: v.text, fontSize: s.fontSize }]}>{label}</Text>
+                    </>
+                )}
+            </Animated.View>
+        </TouchableWithoutFeedback>
+    );
+}
+
 const styles = StyleSheet.create({
-    baseContainer: {
-        height: 56,
-        paddingHorizontal: 24,
-        borderRadius: 16,
+    base: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    fullWidth: {
-        width: '100%',
-    },
-    disabledContainer: {
-        opacity: 0.5,
-    },
-    baseText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        letterSpacing: 0.5,
-    },
-    disabledText: {
-        opacity: 0.9,
-    },
-    primaryContainer: {
-        backgroundColor: '#3b82f6',
+        borderRadius: radii.r4,
         borderWidth: 1,
-        borderColor: 'rgba(59, 130, 246, 0.5)',
-        shadowColor: '#3b82f6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        gap: spacing.s2,
     },
-    primaryText: {
-        color: '#ffffff',
+    label: {
+        fontWeight: typography.weight.bold,
+        letterSpacing: typography.tracking.base,
     },
-    secondaryContainer: {
-        backgroundColor: '#1e293b',
-        borderWidth: 1,
-        borderColor: '#334155',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    secondaryText: {
-        color: '#ffffff',
-    },
-    outlineContainer: {
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: '#334155',
-    },
-    outlineText: {
-        color: '#cbd5e1',
-    },
-    ghostContainer: {
-        backgroundColor: 'transparent',
-    },
-    ghostText: {
-        color: '#94a3b8',
-    },
-    loader: {
-        marginRight: 8,
-    }
 });
-
-export default Button;
