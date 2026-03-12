@@ -58,7 +58,7 @@ export default function AuthPage() {
       await GoogleSignin.hasPlayServices();
 
       const response: any = await GoogleSignin.signIn();
-      console.log("Google userInfo:", response);
+
 
       const user = response?.data?.user;
       const idToken = response?.data?.idToken;
@@ -82,7 +82,6 @@ export default function AuthPage() {
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError("Google Play Services not available");
       } else {
-        console.log("Google Sign In Error:", error);
         setError(
           error?.message
             ? `Google sign-in failed: ${error.message}`

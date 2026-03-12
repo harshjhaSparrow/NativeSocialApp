@@ -8,6 +8,11 @@
     "icon": "./assets/images/MainLogoONLY.png",
     "userInterfaceStyle": "automatic",
     "jsEngine": "hermes",
+    "splash": {
+      "image": "./assets/images/MainLogoONLY.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#030B18"
+    },
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -37,7 +42,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/MainLogoONLY.png",
           "resizeMode": "contain",
           "backgroundColor": "#030B18",
           "android": {

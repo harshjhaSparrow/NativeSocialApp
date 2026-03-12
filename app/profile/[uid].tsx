@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ban, Briefcase, Check, ChevronRight, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, Navigation, UserCheck, UserPlus, Users, X } from "lucide-react-native";
+import { Ban, Briefcase, Check, ChevronRight, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, Navigation, UserCheck, UserPlus, Users, X, Instagram } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from "react-native";
 import * as LocationExpo from 'expo-location';
 import { useUserLocation } from "../../components/LocationGuard";
 import PostItem from "../../components/PostItem";
@@ -359,17 +359,13 @@ export default function UserProfileScreen() {
                         {locationName ? (
                             <View style={styles?.infoPill}>
                                 <MapPin size={14} color="#3b82f6" />
-                                <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>{locationName}</Text>
+                                <Text style={[styles?.infoPillText, { color: '#94a3b8' }]}>
+                                    {locationName}
+                                    {!isOwnProfile && distance ? ` • ${distance} away` : ''}
+                                </Text>
                             </View>
                         ) : null}
                     </View>
-
-                    {!isOwnProfile && distance && (
-                        <View style={styles?.distanceBadge}>
-                            <Navigation size={12} color="#3b82f6" />
-                            <Text style={styles?.distanceText}>{distance} away</Text>
-                        </View>
-                    )}
 
                     <View style={styles?.statsRow}>
                         <TouchableOpacity style={styles?.statButton} onPress={handleOpenFriendsList}>
@@ -425,6 +421,15 @@ export default function UserProfileScreen() {
                                     </>
                                 )}
                             </>
+                        )}
+                        {profile?.instagramHandle && (
+                            <TouchableOpacity
+                                style={[styles?.actionBtn, { backgroundColor: '#e1306c', borderColor: '#e1306c' }]}
+                                onPress={() => Linking.openURL(`https://instagram.com/${profile.instagramHandle}`)}
+                            >
+                                <Instagram size={20} color="#fff" />
+                                <Text style={styles?.primaryBtnText}>Instagram</Text>
+                            </TouchableOpacity>
                         )}
                     </View>
                 </View>

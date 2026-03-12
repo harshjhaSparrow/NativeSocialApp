@@ -104,7 +104,10 @@ const PostItem: React.FC<any> = ({
                                 <View style={styles.locationWrapper}>
                                     <Text style={styles.dotSeparator}>•</Text>
                                     <MapPin size={12} color="#64748b" />
-                                    <Text style={styles.locationText}>{post?.location?.name || "Unknown"}</Text>
+                                    <Text style={styles.locationText}>
+                                        {post?.location?.name || "Unknown"}
+                                        {distance ? ` • ${distance}` : ''}
+                                    </Text>
                                 </View>
                             )}
                         </View>
@@ -113,12 +116,6 @@ const PostItem: React.FC<any> = ({
 
                 {/* Action Buttons */}
                 <View style={styles.headerRight}>
-                    {distance && (
-                        <View style={styles.distanceBadge}>
-                            <Navigation size={12} color="#60a5fa" />
-                            <Text style={styles.distanceText}>{distance}</Text>
-                        </View>
-                    )}
 
                     {onEdit && (
                         <TouchableOpacity onPress={() => onEdit(post?._id)} style={styles.iconButton}>

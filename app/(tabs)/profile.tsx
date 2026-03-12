@@ -1,8 +1,8 @@
 import * as LocationExpo from 'expo-location';
 import { useRouter } from "expo-router";
-import { Briefcase, Check, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, UserPlus, Users, X } from "lucide-react-native";
+import { Briefcase, Check, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, UserPlus, Users, X, Instagram } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from "react-native";
 import { useUserLocation } from "../../components/LocationGuard";
 import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
@@ -297,6 +297,16 @@ export default function ProfileScreen() {
                             <Edit2 size={16} color="#e2e8f0" />
                             <Text style={styles?.editButtonText}>Edit</Text>
                         </TouchableOpacity>
+
+                        {profile?.instagramHandle && (
+                            <TouchableOpacity
+                                style={[styles?.editButton, { backgroundColor: '#e1306c', borderColor: '#e1306c' }]}
+                                onPress={() => Linking.openURL(`https://instagram.com/${profile.instagramHandle}`)}
+                            >
+                                <Instagram size={16} color="#fff" />
+                                <Text style={[styles?.editButtonText, { color: '#fff' }]}>Instagram</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
 

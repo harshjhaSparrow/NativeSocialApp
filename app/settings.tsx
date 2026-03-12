@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from "expo-router";
-import { Bell, ChevronLeft, PauseCircle, Radar, Trash2, ArrowRight, Edit2, ShieldOff, LogOut, FileText } from "lucide-react-native";
+import { Bell, ChevronLeft, PauseCircle, Radar, Trash2, ArrowRight, Edit2, ShieldOff, LogOut, FileText, Code } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { api } from "../services/api";
@@ -159,6 +159,12 @@ export default function SettingsScreen() {
                     <NavRow label="Privacy Policy" icon={<FileText size={16} color={colors.textSecondary} />} onPress={() => router.push('/privacy-policy' as any)} />
                     <View style={styles.divider} />
                     <NavRow label="Terms of Service" icon={<FileText size={16} color={colors.textSecondary} />} onPress={() => router.push('/terms-of-service' as any)} />
+                </View>
+
+                {/* ABOUT */}
+                <SectionLabel label="ABOUT" />
+                <View style={styles.card}>
+                    <NavRow label="Developer Profile" icon={<Code size={16} color={colors.primary} />} onPress={() => router.push('/developer' as any)} />
                 </View>
 
                 <Text style={styles.version}>Orbyt v1.0.0</Text>

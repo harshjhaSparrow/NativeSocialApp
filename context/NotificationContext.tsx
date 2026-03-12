@@ -36,9 +36,6 @@ async function registerForPushNotificationsAsync() {
   try {
     // In SDK 53, push notifications are not supported in Expo Go.
     if (Constants.appOwnership === "expo") {
-      console.log(
-        "Running in Expo Go: Skipping native push notification setup to prevent errors.",
-      );
       return undefined;
     }
 
@@ -62,7 +59,6 @@ async function registerForPushNotificationsAsync() {
         finalStatus = status;
       }
       if (finalStatus !== "granted") {
-        console.log("Failed to get push token for push notification!");
         return undefined;
       }
 
@@ -165,7 +161,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
               const data = response.notification.request.content.data;
               if (data && data.url) {
                 // Here we might navigate using the url from the push notification payload
-                console.log("Notification tapped, navigate to:", data.url);
               }
             },
           );
