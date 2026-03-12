@@ -1,8 +1,8 @@
+import * as LocationExpo from 'expo-location';
 import { useRouter } from "expo-router";
-import { Briefcase, Check, Clock, Edit2, Eye, LogOut, MapPin, UserPlus, Users, X } from "lucide-react-native";
+import { Briefcase, Check, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, UserPlus, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import * as LocationExpo from 'expo-location';
 import { useUserLocation } from "../../components/LocationGuard";
 import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
@@ -167,6 +167,19 @@ export default function ProfileScreen() {
             await api.friends.rejectRequest(user?.uid, requesterUid);
             setIncomingRequestsList(prev => prev.filter(r => r?.uid !== requesterUid));
             setFriendRequests(prev => prev.filter(r => r?.uid !== requesterUid));
+        } catch (e) { console.error(e); }
+    };
+
+    const handleWithdrawRequest = async (targetUid: string) => {
+        if (!user) return;
+        try {
+            // Reuse reject endpoint — removes the request from both sides
+            await api.friends.rejectRequest(targetUid, user.uid);
+            setSentRequestsList(prev => prev.filter(r => r?.uid !== targetUid));
+            setProfile(prev => prev ? {
+                ...prev,
+                outgoingRequests: prev.outgoingRequests?.filter(id => id !== targetUid),
+            } : null);
         } catch (e) { console.error(e); }
     };
 
@@ -439,7 +452,14 @@ export default function ProfileScreen() {
                                                         )}
                                                     </View>
                                                     <Text style={{ color: '#fff', fontSize: 16, flex: 1 }}>{f?.displayName}</Text>
-                                                    <Check size={16} color="#22c55e" />
+                                                    {/* Message icon — opens DM */}
+                                                    <TouchableOpacity
+                                                        style={styles?.msgBtn}
+                                                        onPress={() => { setIsFriendsModalOpen(false); router.push(`/chat/${f?.uid}` as any); }}
+                                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                    >
+                                                        <MessageCircle size={20} color="#3b82f6" />
+                                                    </TouchableOpacity>
                                                 </TouchableOpacity>
                                             ))}
                                         </>
@@ -491,8 +511,15 @@ export default function ProfileScreen() {
                                                             <Text style={styles?.modalAvatarText}>{req?.displayName?.[0]}</Text>
                                                         )}
                                                     </View>
-                                                    <Text style={{ color: '#fff', fontSize: 16, flex: 1 }}>{req?.displayName}</Text>
-                                                    <View style={styles?.pendingBadge}><Text style={styles?.pendingBadgeText}>Pending</Text></View>
+                                                    <Text style={{ color: '#fff', fontSize: 15, flex: 1 }}>{req?.displayName}</Text>
+                                                    {/* Withdraw button */}
+                                                    <TouchableOpacity
+                                                        style={styles?.withdrawBtn}
+                                                        onPress={() => handleWithdrawRequest(req?.uid)}
+                                                    >
+                                                        <X size={12} color="#ef4444" />
+                                                        <Text style={styles?.withdrawBtnText}>Withdraw</Text>
+                                                    </TouchableOpacity>
                                                 </View>
                                             ))}
                                         </>
@@ -610,6 +637,9 @@ const styles = StyleSheet.create({
     rejectSmallBtn: { backgroundColor: '#334155', padding: 6, borderRadius: 8 },
     pendingBadge: { backgroundColor: 'rgba(251,191,36,0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
     pendingBadgeText: { color: '#fbbf24', fontSize: 11, fontWeight: 'bold' },
+    withdrawBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(239,68,68,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' },
+    withdrawBtnText: { color: '#ef4444', fontSize: 11, fontWeight: '700' },
+    msgBtn: { padding: 6, backgroundColor: 'rgba(59,130,246,0.12)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)' },
     requestBadge: { backgroundColor: '#ef4444', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, marginLeft: 4 },
     requestBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
 });

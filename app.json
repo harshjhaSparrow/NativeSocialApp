@@ -1,22 +1,26 @@
 {
   "expo": {
     "name": "Orbyt",
-    "slug": "orbyt",
+    "scheme": "orbyt",
+    "slug": "ReactNativeApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "orbyt",
+    "icon": "./assets/images/MainLogoONLY.png",
     "userInterfaceStyle": "automatic",
+    "jsEngine": "hermes",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.orbyt.app",
+      "icon": "./assets/images/MainLogoONLY.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "config": {},
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
+        "foregroundImage": "./assets/images/MainLogoONLY.png",
+        "backgroundColor": "#030B18",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
@@ -26,7 +30,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/MainLogoONLY.png"
     },
     "plugins": [
       "expo-router",
@@ -34,14 +38,20 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#030B18",
-          "dark": {
-            "backgroundColor": "#030B18"
+          "android": {
+            "resizeMode": "contain"
           }
         }
-      ]
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.793742543220-bnrhm15pgnjs5b1evvadu2tpjjk6pv6m"
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

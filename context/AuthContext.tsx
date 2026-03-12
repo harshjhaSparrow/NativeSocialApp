@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { AuthStatus } from '../types';
 
 // Simplified User type for our internal auth
@@ -52,6 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = async () => {
+        // Revoke Google session silently (no-op if user didn't sign in via Google)
+        try {
+            await GoogleSignin.signOut();
+        } catch (e) {
+            // not signed in via Google — ignore
+        }
         await AsyncStorage.removeItem('socially_session');
         setUser(null);
         setStatus('unauthenticated');
