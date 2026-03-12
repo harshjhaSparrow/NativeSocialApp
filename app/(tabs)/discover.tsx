@@ -9,6 +9,7 @@ import {
     Animated,
     PanResponder,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from "expo-router";
 import { Briefcase, MapPin, SearchX, Heart, X, Info } from "lucide-react-native";
@@ -45,11 +46,22 @@ function SwipeCard({
     const router = useRouter();
     const { location: myLocation } = useUserLocation();
 
+    // Fix stale closures by using refs for callbacks
+    const onSwipeLeftRef = useRef(onSwipeLeft);
+    const onSwipeRightRef = useRef(onSwipeRight);
+    const isTopRef = useRef(isTop);
+
+    useEffect(() => {
+        onSwipeLeftRef.current = onSwipeLeft;
+        onSwipeRightRef.current = onSwipeRight;
+        isTopRef.current = isTop;
+    }, [onSwipeLeft, onSwipeRight, isTop]);
+
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => isTop,
+            onStartShouldSetPanResponder: () => isTopRef.current,
             onMoveShouldSetPanResponder: (_, g) =>
-                isTop && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+                isTopRef.current && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
             onPanResponderGrant: () => {
                 pan.setOffset({ x: (pan.x as any)._value, y: 0 });
                 pan.setValue({ x: 0, y: 0 });
@@ -68,9 +80,9 @@ function SwipeCard({
             onPanResponderRelease: (_, g) => {
                 pan.flattenOffset();
                 if (g.dx > SWIPE_THRESHOLD) {
-                    Animated.timing(pan, { toValue: { x: screen.width * 1.5, y: 0 }, duration: 280, useNativeDriver: true }).start(onSwipeRight);
+                    Animated.timing(pan, { toValue: { x: screen.width * 1.5, y: 0 }, duration: 280, useNativeDriver: true }).start(() => onSwipeRightRef.current());
                 } else if (g.dx < -SWIPE_THRESHOLD) {
-                    Animated.timing(pan, { toValue: { x: -screen.width * 1.5, y: 0 }, duration: 280, useNativeDriver: true }).start(onSwipeLeft);
+                    Animated.timing(pan, { toValue: { x: -screen.width * 1.5, y: 0 }, duration: 280, useNativeDriver: true }).start(() => onSwipeLeftRef.current());
                 } else {
                     Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: true, friction: 6 }).start();
                     Animated.timing(likeOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start();
@@ -210,12 +222,20 @@ export default function DiscoverScreen() {
                     api.profile.get(user.uid),
                 ]);
                 const maxDistMeters = (myProf?.discoveryRadius || 10) * 1000;
+                
+                let localSwiped: string[] = [];
+                try {
+                    const stored = await AsyncStorage.getItem(`swipedUsers_${user.uid}`);
+                    if (stored) localSwiped = JSON.parse(stored);
+                } catch (e) {}
+
                 const excluded = new Set<string>([
                     user.uid,
                     ...(myProf?.friends || []),
                     ...(myProf?.outgoingRequests || []),
                     ...(myProf?.incomingRequests || []),
                     ...(myProf?.blockedUsers || []),
+                    ...localSwiped,
                 ]);
                 const filtered = allUsers.filter((u: any) => {
                     if (excluded.has(u.uid) || u.isDiscoverable === false || !u.lastLocation || !myLocation) return false;
@@ -236,15 +256,34 @@ export default function DiscoverScreen() {
         fetchDiscover();
     }, [user, myLocation]);
 
-    const handleSwipeRight = async () => {
+    const recordSwipe = async (targetUid: string) => {
+        if (!user) return;
+        try {
+            const key = `swipedUsers_${user.uid}`;
+            const stored = await AsyncStorage.getItem(key);
+            const swipedIds = stored ? JSON.parse(stored) : [];
+            swipedIds.push(targetUid);
+            await AsyncStorage.setItem(key, JSON.stringify(swipedIds));
+        } catch (e) {
+            console.error("Failed to save swipe locally", e);
+        }
+    };
+
+    const handleSwipeRight = () => {
         const target = profiles[cardIndex];
         if (user && target?.uid) {
-            try { await api.friends.sendRequest(user.uid, target.uid); } catch { }
+            // Do not await to avoid blocking UI
+            api.friends.sendRequest(user.uid, target.uid).catch(() => {});
+            recordSwipe(target.uid);
         }
         setCardIndex(i => i + 1);
     };
 
     const handleSwipeLeft = () => {
+        const target = profiles[cardIndex];
+        if (target?.uid) {
+            recordSwipe(target.uid);
+        }
         setCardIndex(i => i + 1);
     };
 
