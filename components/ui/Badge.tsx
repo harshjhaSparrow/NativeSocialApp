@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, typography, radii, spacing } from '../../constants/theme';
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { colors, radii, spacing, typography } from '../../constants/theme';
 
 type BadgeVariant = 'default' | 'blue' | 'red' | 'green' | 'amber' | 'purple' | 'teal';
 

@@ -1,6 +1,87 @@
 import axios from 'axios';
 import { Message, Notification, Post, UserProfile } from "../types";
 
+let globalSocket: WebSocket | null = null;
+let globalSocketUid: string | null = null;
+const messageListeners: Set<(data: any) => void> = new Set();
+let keepAliveInterval: any;
+let reconnectTimeout: any;
+let manuallyClosed = false;
+
+const connectGlobalWs = (uid: string) => {
+    manuallyClosed = false;
+    if (globalSocket && globalSocketUid === uid && (globalSocket.readyState === WebSocket.CONNECTING || globalSocket.readyState === WebSocket.OPEN)) {
+        return;
+    }
+    
+    globalSocketUid = uid;
+    if (globalSocket) {
+        globalSocket.onclose = null;
+        globalSocket.close();
+    }
+    
+    // Using the deployed backend WebSocket URL.
+    const wsUrl = `wss://orbyt.strangerchat.space?uid=${uid}`;
+    
+    const establish = () => {
+        if (manuallyClosed) return;
+        globalSocket = new WebSocket(wsUrl);
+        
+        globalSocket.onopen = () => {
+            keepAliveInterval = setInterval(() => {
+                if (globalSocket?.readyState === WebSocket.OPEN) {
+                    globalSocket.send(JSON.stringify({ type: "ping" }));
+                }
+            }, 30000);
+        };
+        
+        globalSocket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === "ping" || data.type === "pong") return;
+                messageListeners.forEach(l => l(data));
+            } catch (e) {
+                console.error("WS Parse Error", e);
+            }
+        };
+        
+        globalSocket.onclose = () => {
+            clearInterval(keepAliveInterval);
+            if (!manuallyClosed) {
+                reconnectTimeout = setTimeout(establish, 3000);
+            }
+        };
+        
+        globalSocket.onerror = () => {
+            if (globalSocket) globalSocket.close();
+        };
+    };
+    
+    establish();
+};
+
+export const wsManager = {
+    connect: connectGlobalWs,
+    disconnect: () => {
+        manuallyClosed = true;
+        globalSocketUid = null;
+        if (globalSocket) {
+            globalSocket.onclose = null;
+            globalSocket.close();
+            globalSocket = null;
+        }
+        clearInterval(keepAliveInterval);
+        clearTimeout(reconnectTimeout);
+    },
+    subscribe: (uid: string, listener: (data: any) => void) => {
+        connectGlobalWs(uid);
+        messageListeners.add(listener);
+        return () => {
+            messageListeners.delete(listener);
+        };
+    }
+};
+
 // For local development on Android Emulator: "http://10.0.2.2:5000/api"
 // For local development on iOS Simulator: "http://localhost:5000/api"
 // For production / deployed backend: "https://orbyt.strangerchat.space/api"
@@ -165,57 +246,10 @@ export const api = {
             }
         },
         subscribe: (uid: string, onMessage: (msg: Message) => void) => {
-            // WebSocket Subscription for Chat
-            // Using the deployed backend WebSocket URL.
-            const wsUrl = `wss://orbyt.strangerchat.space?uid=${uid}`;
-
-            let socket: WebSocket | null = null;
-            let keepAliveInterval: any;
-            let reconnectTimeout: any;
-            let isSubscribed = true;
-
-            const connect = () => {
-                if (!isSubscribed) return;
-                socket = new WebSocket(wsUrl);
-
-                socket.onopen = () => {
-                    keepAliveInterval = setInterval(() => {
-                        if (socket?.readyState === WebSocket.OPEN) {
-                            socket.send(JSON.stringify({ type: "ping" }));
-                        }
-                    }, 30000);
-                };
-
-                socket.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        if (data.type === "ping" || data.type === "pong") return;
-                        onMessage(data);
-                    } catch (e) {
-                        console.error("WS Parse Error", e);
-                    }
-                };
-
-                socket.onclose = () => {
-                    clearInterval(keepAliveInterval);
-                    if (isSubscribed) {
-                        reconnectTimeout = setTimeout(connect, 3000);
-                    }
-                };
-
-                socket.onerror = () => {
-                    if (socket) socket.close();
-                };
-            };
-
-            connect();
-
-            return () => {
-                isSubscribed = false;
-                if (socket) socket.close();
-                clearInterval(keepAliveInterval);
-                clearTimeout(reconnectTimeout);
-            };
+            return wsManager.subscribe(uid, (data: any) => {
+                if (data.type === "notification") return;
+                onMessage(data as Message);
+            });
         },
     },
     notifications: {

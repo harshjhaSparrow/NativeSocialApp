@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Check, X, User as UserIcon, MessageCircle } from "lucide-react-native";
-import { api } from "../../services/api";
-import { Post, UserProfile } from "../../types";
+import { Check, ChevronLeft, MessageCircle, User as UserIcon, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
+import { Post, UserProfile } from "../../types";
 
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,9 +28,9 @@ export default function PostDetailScreen() {
                 if (data) {
                     setPost(data);
 
-                    if (user && data.uid === user.uid && data.type === "meetup" && data.pendingRequests?.length) {
+                    if (user && data?.uid === user?.uid && data?.type === "meetup" && data?.pendingRequests?.length) {
                         setLoadingRequests(true);
-                        const users = await api.profile.getBatch(data.pendingRequests);
+                        const users = await api.profile.getBatch(data?.pendingRequests);
                         setPendingUsers(users);
                         setLoadingRequests(false);
                     }
@@ -47,20 +47,20 @@ export default function PostDetailScreen() {
     }, [id, user]);
 
     const handleLike = async (postToUpdate: Post) => {
-        if (!user || !postToUpdate._id) return;
+        if (!user || !postToUpdate?._id) return;
 
-        const isLiked = postToUpdate.likedBy?.includes(user.uid);
-        const newLikes = isLiked ? postToUpdate.likes - 1 : postToUpdate.likes + 1;
+        const isLiked = postToUpdate?.likedBy?.includes(user?.uid);
+        const newLikes = isLiked ? postToUpdate?.likes - 1 : postToUpdate?.likes + 1;
         const newLikedBy = isLiked
-            ? postToUpdate.likedBy?.filter((uid) => uid !== user.uid) || []
-            : [...(postToUpdate.likedBy || []), user.uid];
+            ? postToUpdate?.likedBy?.filter((uid) => uid !== user?.uid) || []
+            : [...(postToUpdate?.likedBy || []), user?.uid];
 
         const updatedPost = { ...postToUpdate, likes: newLikes, likedBy: newLikedBy };
         setPost(updatedPost);
 
         try {
-            const updatedData = await api.posts.toggleLike(postToUpdate._id, user.uid);
-            setPost({ ...updatedPost, likes: updatedData.likes, likedBy: updatedData.likedBy });
+            const updatedData = await api.posts.toggleLike(postToUpdate?._id, user?.uid);
+            setPost({ ...updatedPost, likes: updatedData?.likes, likedBy: updatedData?.likedBy });
         } catch (err) {
             setPost(postToUpdate);
         }
@@ -69,8 +69,8 @@ export default function PostDetailScreen() {
     const handleAddComment = async (postId: string, text: string) => {
         if (!user) return;
         try {
-            const newComment = await api.posts.addComment(postId, user.uid, text);
-            setPost((prev) => prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : null);
+            const newComment = await api.posts.addComment(postId, user?.uid, text);
+            setPost((prev) => prev ? { ...prev, comments: [...(prev?.comments || []), newComment] } : null);
         } catch (error) {
             console.error(error);
         }
@@ -82,7 +82,7 @@ export default function PostDetailScreen() {
             {
                 text: "Delete", style: "destructive", onPress: async () => {
                     if (!user) return;
-                    await api.posts.deletePost(postId, user.uid);
+                    await api.posts.deletePost(postId, user?.uid);
                     router.back();
                 }
             }
@@ -96,12 +96,12 @@ export default function PostDetailScreen() {
     const handleAcceptRequest = async (requesterUid: string) => {
         if (!user || !post?._id) return;
         try {
-            await api.meetups.accept(post._id, user.uid, requesterUid);
-            setPendingUsers((prev) => prev.filter((u) => u.uid !== requesterUid));
+            await api.meetups.accept(post?._id, user?.uid, requesterUid);
+            setPendingUsers((prev) => prev.filter((u) => u?.uid !== requesterUid));
             setPost((prev) => prev ? {
                 ...prev,
-                pendingRequests: prev.pendingRequests?.filter(uid => uid !== requesterUid),
-                attendees: [...(prev.attendees || []), requesterUid],
+                pendingRequests: prev?.pendingRequests?.filter(uid => uid !== requesterUid),
+                attendees: [...(prev?.attendees || []), requesterUid],
             } : null);
         } catch (e) {
             Alert.alert("Error", "Failed to accept request");
@@ -111,11 +111,11 @@ export default function PostDetailScreen() {
     const handleRejectRequest = async (requesterUid: string) => {
         if (!user || !post?._id) return;
         try {
-            await api.meetups.reject(post._id, user.uid, requesterUid);
-            setPendingUsers((prev) => prev.filter((u) => u.uid !== requesterUid));
+            await api.meetups.reject(post?._id, user?.uid, requesterUid);
+            setPendingUsers((prev) => prev.filter((u) => u?.uid !== requesterUid));
             setPost((prev) => prev ? {
                 ...prev,
-                pendingRequests: prev.pendingRequests?.filter(uid => uid !== requesterUid),
+                pendingRequests: prev?.pendingRequests?.filter(uid => uid !== requesterUid),
             } : null);
         } catch (e) {
             Alert.alert("Error", "Failed to reject request");
@@ -124,29 +124,29 @@ export default function PostDetailScreen() {
 
     if (loading) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
     }
 
-    const isHost = user && post && user.uid === post.uid;
+    const isHost = user && post && user?.uid === post?.uid;
     const isMeetup = post?.type === "meetup";
 
     return (
-        <View style={styles.container}>
+        <View style={styles?.container}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.backButton}>
                     <ChevronLeft size={24} color="#94a3b8" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Post</Text>
+                <Text style={styles?.headerTitle}>Post</Text>
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles?.scrollContent}>
                 {error ? (
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={styles?.errorText}>{error}</Text>
                 ) : post ? (
                     <>
                         <PostItem
@@ -160,50 +160,50 @@ export default function PostDetailScreen() {
 
                         {/* Host Management */}
                         {isHost && isMeetup && (
-                            <View style={styles.hostSection}>
+                            <View style={styles?.hostSection}>
                                 <TouchableOpacity
-                                    style={styles.openChatBtn}
-                                    onPress={() => router.push(`/chat/group/${post._id}`)}
+                                    style={styles?.openChatBtn}
+                                    onPress={() => router.push(`/chat/group/${post?._id}`)}
                                 >
                                     <MessageCircle size={20} color="#3b82f6" />
-                                    <Text style={styles.openChatText}>Open Group Chat</Text>
+                                    <Text style={styles?.openChatText}>Open Group Chat</Text>
                                 </TouchableOpacity>
 
-                                <View style={styles.requestsBox}>
-                                    <View style={styles.requestsHeader}>
-                                        <Text style={styles.requestsTitle}>Pending Requests ({pendingUsers.length})</Text>
+                                <View style={styles?.requestsBox}>
+                                    <View style={styles?.requestsHeader}>
+                                        <Text style={styles?.requestsTitle}>Pending Requests ({pendingUsers?.length})</Text>
                                     </View>
 
                                     {loadingRequests ? (
                                         <ActivityIndicator size="small" color="#3b82f6" style={{ padding: 24 }} />
-                                    ) : pendingUsers.length === 0 ? (
-                                        <Text style={styles.noRequestsText}>No pending requests</Text>
+                                    ) : pendingUsers?.length === 0 ? (
+                                        <Text style={styles?.noRequestsText}>No pending requests</Text>
                                     ) : (
                                         <View>
                                             {pendingUsers.map(reqUser => (
-                                                <View key={reqUser.uid} style={styles.requestItem}>
+                                                <View key={reqUser?.uid} style={styles?.requestItem}>
                                                     <TouchableOpacity
-                                                        style={styles.requestInfo}
-                                                        onPress={() => router.push(`/profile/${reqUser.uid}`)}
+                                                        style={styles?.requestInfo}
+                                                        onPress={() => router.push(`/profile/${reqUser?.uid}`)}
                                                     >
-                                                        <View style={styles.requestAvatar}>
-                                                            {reqUser.photoURL ? (
-                                                                <Image source={{ uri: reqUser.photoURL }} style={styles.avatarImage} />
+                                                        <View style={styles?.requestAvatar}>
+                                                            {reqUser?.photoURL ? (
+                                                                <Image source={{ uri: reqUser?.photoURL }} style={styles?.avatarImage} />
                                                             ) : (
                                                                 <UserIcon size={20} color="#64748b" />
                                                             )}
                                                         </View>
                                                         <View style={{ flex: 1 }}>
-                                                            <Text style={styles.requestName}>{reqUser.displayName}</Text>
-                                                            <Text style={styles.requestBio} numberOfLines={1}>{reqUser.bio || "No bio"}</Text>
+                                                            <Text style={styles?.requestName}>{reqUser?.displayName}</Text>
+                                                            <Text style={styles?.requestBio} numberOfLines={1}>{reqUser?.bio || "No bio"}</Text>
                                                         </View>
                                                     </TouchableOpacity>
 
-                                                    <View style={styles.requestActions}>
-                                                        <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptRequest(reqUser.uid)}>
+                                                    <View style={styles?.requestActions}>
+                                                        <TouchableOpacity style={styles?.acceptBtn} onPress={() => handleAcceptRequest(reqUser?.uid)}>
                                                             <Check size={16} color="#22c55e" />
                                                         </TouchableOpacity>
-                                                        <TouchableOpacity style={styles.rejectBtn} onPress={() => handleRejectRequest(reqUser.uid)}>
+                                                        <TouchableOpacity style={styles?.rejectBtn} onPress={() => handleRejectRequest(reqUser?.uid)}>
                                                             <X size={16} color="#ef4444" />
                                                         </TouchableOpacity>
                                                     </View>

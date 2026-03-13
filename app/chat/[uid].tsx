@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+/* eslint-disable react-hooks/exhaustive-deps */
 import * as Haptics from 'expo-haptics';
-import { ChevronLeft, Send, Users, User as UserIcon } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronLeft, Send, User as UserIcon } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Message, UserProfile } from '../../types';
@@ -30,9 +31,9 @@ export default function ChatScreen() {
                     return;
                 }
                 setFriend(friendProfile);
-                const history = await api.chat.getHistory(user.uid, uid);
+                const history = await api.chat.getHistory(user?.uid, uid);
                 setMessages(history.reverse()); // FlatList inverted
-                await api.chat.markRead(user.uid, uid);
+                await api.chat.markRead(user?.uid, uid);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -46,18 +47,18 @@ export default function ChatScreen() {
     useEffect(() => {
         if (!user || !uid) return;
 
-        const unsubscribe = api.chat.subscribe(user.uid, (newMsg: Message) => {
+        const unsubscribe = api.chat.subscribe(user?.uid, (newMsg: Message) => {
             const isRelevant =
-                (newMsg.fromUid === uid && newMsg.toUid === user.uid) ||
-                (newMsg.fromUid === user.uid && newMsg.toUid === uid);
+                (newMsg?.fromUid === uid && newMsg?.toUid === user?.uid) ||
+                (newMsg?.fromUid === user?.uid && newMsg?.toUid === uid);
 
             if (isRelevant) {
                 setMessages(prev => {
-                    if (prev.some(m => m._id === newMsg._id)) return prev;
+                    if (prev.some(m => m?._id === newMsg?._id)) return prev;
                     return [newMsg, ...prev]; // FlatList inverted
                 });
 
-                if (newMsg.fromUid === uid) {
+                if (newMsg?.fromUid === uid) {
                     api.chat.markRead(user.uid, uid).catch(console.error);
                 }
             }
@@ -71,12 +72,12 @@ export default function ChatScreen() {
         setSending(true);
         const msgText = text.trim();
         setText('');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle?.Light);
 
         try {
-            const sentMsg = await api.chat.send(user.uid, uid, msgText);
+            const sentMsg = await api.chat.send(user?.uid, uid, msgText);
             setMessages(prev => {
-                if (prev.some(m => m._id === sentMsg._id)) return prev;
+                if (prev.some(m => m?._id === sentMsg?._id)) return prev;
                 return [sentMsg, ...prev]; // FlatList inverted
             });
         } catch (e) {
@@ -89,7 +90,7 @@ export default function ChatScreen() {
 
     if (loading) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
@@ -99,30 +100,30 @@ export default function ChatScreen() {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={styles?.container}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.backButton}>
                     <ChevronLeft size={24} color="#94a3b8" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.headerInfo}
+                    style={styles?.headerInfo}
                     onPress={() => router.push(`/profile/${uid}` as any)}
                 >
-                    <View style={styles.avatar}>
-                        {friend.photoURL ? (
-                            <Image source={{ uri: friend.photoURL }} style={styles.avatarImage} />
+                    <View style={styles?.avatar}>
+                        {friend?.photoURL ? (
+                            <Image source={{ uri: friend?.photoURL }} style={styles?.avatarImage} />
                         ) : (
-                            <Text style={styles.avatarText}>{friend.displayName?.[0]}</Text>
+                            <Text style={styles?.avatarText}>{friend?.displayName?.[0]}</Text>
                         )}
                     </View>
                     <View>
-                        <Text style={styles.headerName}>{friend.displayName}</Text>
-                        <Text style={styles.headerSub}>Tap to view profile</Text>
+                        <Text style={styles?.headerName}>{friend?.displayName}</Text>
+                        <Text style={styles?.headerSub}>Tap to view profile</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -132,54 +133,54 @@ export default function ChatScreen() {
                 ref={flatListRef}
                 data={messages}
                 inverted
-                keyExtractor={(item) => item._id || Math.random().toString()}
+                keyExtractor={(item) => item?._id || Math.random().toString()}
                 renderItem={({ item, index }) => {
-                    const isMe = item.fromUid === user?.uid;
-                    const showAvatar = !isMe && (index === 0 || messages[index - 1]?.fromUid !== item.fromUid);
+                    const isMe = item?.fromUid === user?.uid;
+                    const showAvatar = !isMe && (index === 0 || messages?.[index - 1]?.fromUid !== item?.fromUid);
 
                     return (
-                        <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
+                        <View style={[styles?.messageRow, isMe ? styles?.messageRowMe : styles?.messageRowThem]}>
                             {!isMe && showAvatar && (
-                                <View style={styles.messageAvatar}>
-                                    {friend.photoURL ? (
-                                        <Image source={{ uri: friend.photoURL }} style={styles.avatarImage} />
+                                <View style={styles?.messageAvatar}>
+                                    {friend?.photoURL ? (
+                                        <Image source={{ uri: friend?.photoURL }} style={styles?.avatarImage} />
                                     ) : (
-                                        <Text style={styles.messageAvatarText}>{friend.displayName?.[0]}</Text>
+                                        <Text style={styles?.messageAvatarText}>{friend?.displayName?.[0]}</Text>
                                     )}
                                 </View>
                             )}
-                            {!isMe && !showAvatar && <View style={styles.messageAvatarSpacer} />}
+                            {!isMe && !showAvatar && <View style={styles?.messageAvatarSpacer} />}
 
-                            <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
-                                <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextThem]}>{item.text}</Text>
+                            <View style={[styles?.messageBubble, isMe ? styles?.messageBubbleMe : styles?.messageBubbleThem]}>
+                                <Text style={[styles?.messageText, isMe ? styles?.messageTextMe : styles?.messageTextThem]}>{item?.text}</Text>
                             </View>
                         </View>
                     );
                 }}
-                contentContainerStyle={styles.messagesContent}
+                contentContainerStyle={styles?.messagesContent}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <View style={styles.emptyIconBox}>
+                    <View style={styles?.emptyContainer}>
+                        <View style={styles?.emptyIconBox}>
                             <UserIcon size={32} color="#475569" />
                         </View>
-                        <Text style={styles.emptyText}>Start the conversation!</Text>
+                        <Text style={styles?.emptyText}>Start the conversation!</Text>
                     </View>
                 }
             />
 
             {/* Input */}
-            <View style={styles.inputContainer}>
+            <View style={styles?.inputContainer}>
                 <TextInput
                     value={text}
                     onChangeText={setText}
                     placeholder="Type a message..."
                     placeholderTextColor="#64748b"
-                    style={styles.input}
+                    style={styles?.input}
                     multiline
                     maxLength={1000}
                 />
                 <TouchableOpacity
-                    style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
+                    style={[styles?.sendButton, (!text.trim() || sending) && styles?.sendButtonDisabled]}
                     disabled={!text.trim() || sending}
                     onPress={handleSend}
                 >

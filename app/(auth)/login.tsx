@@ -68,12 +68,12 @@ export default function AuthPage() {
       }
 
       const result = await api.auth.googleLogin(
-        user.email,
-        user.name || user.email,
-        user.photo || ""
+        user?.email,
+        user?.name || user?.email,
+        user?.photo || ""
       );
 
-      login(result.user);
+      login(result?.user);
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         setError("Google sign in cancelled");
@@ -113,7 +113,7 @@ export default function AuthPage() {
         response = await api.auth.signup(email, password);
       }
 
-      login(response.user);
+      login(response?.user);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const msg =
@@ -140,32 +140,32 @@ export default function AuthPage() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles?.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles?.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
+        <View style={styles?.header}>
           <Image
             source={require("../../assets/images/MainLogoONLY.png")}
             style={{ width: 80, height: 80, borderRadius: 20 }}
           />
-          <Text style={styles.subtitle}>
+          <Text style={styles?.subtitle}>
             {isLogin
               ? "Welcome back! Your community is waiting."
               : "Create a profile and start connecting instantly."}
           </Text>
         </View>
 
-        <View style={styles.formCard}>
+        <View style={styles?.formCard}>
           {/* GOOGLE LOGIN */}
 
           <TouchableOpacity
             style={[
-              styles.googleBtn,
-              googleLoading && styles.googleBtnDisabled,
+              styles?.googleBtn,
+              googleLoading && styles?.googleBtnDisabled,
             ]}
             onPress={handleGooglePress}
             disabled={googleLoading}
@@ -178,21 +178,21 @@ export default function AuthPage() {
                 source={{
                   uri: "https://developers.google.com/identity/images/g-logo.png",
                 }}
-                style={styles.googleIcon}
+                style={styles?.googleIcon}
               />
             )}
 
-            <Text style={styles.googleBtnText}>
+            <Text style={styles?.googleBtnText}>
               {googleLoading ? "Signing in..." : "Continue with Google"}
             </Text>
           </TouchableOpacity>
 
           {/* Divider */}
 
-          <View style={styles.dividerBox}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>or use email</Text>
-            <View style={styles.divider} />
+          <View style={styles?.dividerBox}>
+            <View style={styles?.divider} />
+            <Text style={styles?.dividerText}>or use email</Text>
+            <View style={styles?.divider} />
           </View>
 
           {/* EMAIL INPUT */}
@@ -217,8 +217,8 @@ export default function AuthPage() {
           />
 
           {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={styles?.errorBox}>
+              <Text style={styles?.errorText}>{error}</Text>
             </View>
           ) : null}
 
@@ -227,37 +227,37 @@ export default function AuthPage() {
             onPress={handleSubmit}
             fullWidth
             loading={loading}
-            style={styles.submitButton}
+            style={styles?.submitButton}
           />
 
           <TouchableOpacity
-            style={styles.toggleButton}
+            style={styles?.toggleButton}
             onPress={() => {
               setIsLogin(!isLogin);
               setError(null);
             }}
           >
-            <Text style={styles.toggleText}>
+            <Text style={styles?.toggleText}>
               {isLogin ? "New to Orbyt? " : "Have an account? "}
-              <Text style={styles.toggleTextHighlight}>
+              <Text style={styles?.toggleTextHighlight}>
                 {isLogin ? "Sign Up" : "Log In"}
               </Text>
             </Text>
           </TouchableOpacity>
 
           {!isLogin && (
-            <View style={styles.legalBox}>
-              <Text style={styles.legalText}>
+            <View style={styles?.legalBox}>
+              <Text style={styles?.legalText}>
                 By creating an account you agree to our{" "}
                 <Text
-                  style={styles.legalLink}
+                  style={styles?.legalLink}
                   onPress={() => router.push("/terms-of-service" as any)}
                 >
                   Terms of Service
                 </Text>{" "}
                 and{" "}
                 <Text
-                  style={styles.legalLink}
+                  style={styles?.legalLink}
                   onPress={() => router.push("/privacy-policy" as any)}
                 >
                   Privacy Policy

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
-import { colors, radii, typography } from '../../constants/theme';
+import { Image, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { colors, typography } from '../../constants/theme';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 

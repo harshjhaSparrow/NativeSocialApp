@@ -33,13 +33,13 @@ export default function GroupChatScreen() {
                 setGroupPost(groupData);
 
                 if (groupData?.meetupDetails?.title) {
-                    setGroupTitle(groupData.meetupDetails.title);
-                } else if (history.length > 0 && history[0].groupTitle) {
-                    setGroupTitle(history[0].groupTitle);
+                    setGroupTitle(groupData?.meetupDetails?.title);
+                } else if (history?.length > 0 && history?.[0]?.groupTitle) {
+                    setGroupTitle(history?.[0]?.groupTitle);
                 }
 
                 if (groupData) {
-                    const allMemberIds = [groupData.uid, ...(groupData.attendees || [])];
+                    const allMemberIds = [groupData?.uid, ...(groupData?.attendees || [])];
                     const uniqueIds = Array.from(new Set(allMemberIds));
                     const profiles = await api.profile.getBatch(uniqueIds);
                     setMembers(profiles);
@@ -57,10 +57,10 @@ export default function GroupChatScreen() {
     useEffect(() => {
         if (!user || !groupId) return;
 
-        const unsubscribe = api.chat.subscribe(user.uid, (newMsg: Message) => {
-            if (newMsg.groupId === groupId) {
+        const unsubscribe = api.chat.subscribe(user?.uid, (newMsg: Message) => {
+            if (newMsg?.groupId === groupId) {
                 setMessages(prev => {
-                    if (prev.some(m => m._id === newMsg._id)) return prev;
+                    if (prev.some(m => m?._id === newMsg?._id)) return prev;
                     return [newMsg, ...prev]; // FlatList inverted
                 });
             }
@@ -76,9 +76,9 @@ export default function GroupChatScreen() {
         setText('');
 
         try {
-            const sentMsg = await api.chat.send(user.uid, 'group', msgText, groupId);
+            const sentMsg = await api.chat.send(user?.uid, 'group', msgText, groupId);
             setMessages(prev => {
-                if (prev.some(m => m._id === sentMsg._id)) return prev;
+                if (prev.some(m => m?._id === sentMsg?._id)) return prev;
                 return [sentMsg, ...prev]; // FlatList inverted
             });
         } catch (e) {
@@ -102,11 +102,11 @@ export default function GroupChatScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            await api.meetups.removeAttendee(groupPost._id!, user.uid, targetUid);
-                            setMembers(prev => prev.filter(m => m.uid !== targetUid));
+                            await api.meetups.removeAttendee(groupPost?._id!, user?.uid, targetUid);
+                            setMembers(prev => prev.filter(m => m?.uid !== targetUid));
                             setGroupPost(prev => prev ? {
                                 ...prev,
-                                attendees: prev.attendees?.filter(id => id !== targetUid)
+                                attendees: prev?.attendees?.filter(id => id !== targetUid)
                             } : null);
                         } catch (e) {
                             console.error(e);
@@ -119,7 +119,7 @@ export default function GroupChatScreen() {
 
     if (loading) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
@@ -127,26 +127,26 @@ export default function GroupChatScreen() {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={styles?.container}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.backButton}>
                     <ChevronLeft size={24} color="#94a3b8" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.headerInfo}
+                    style={styles?.headerInfo}
                     onPress={() => setShowGroupInfo(true)}
                 >
-                    <View style={styles.avatar}>
+                    <View style={styles?.avatar}>
                         <Users size={20} color="#60a5fa" />
                     </View>
                     <View>
-                        <Text style={styles.headerName}>{groupTitle}</Text>
-                        <Text style={styles.headerSub}>Tap for Group Info</Text>
+                        <Text style={styles?.headerName}>{groupTitle}</Text>
+                        <Text style={styles?.headerSub}>Tap for Group Info</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -155,59 +155,59 @@ export default function GroupChatScreen() {
             <FlatList
                 data={messages}
                 inverted
-                keyExtractor={(item) => item._id || Math.random().toString()}
+                keyExtractor={(item) => item?._id || Math.random().toString()}
                 renderItem={({ item, index }) => {
-                    const isMe = item.fromUid === user?.uid;
-                    const showAvatar = !isMe && (index === 0 || messages[index - 1]?.fromUid !== item.fromUid);
+                    const isMe = item?.fromUid === user?.uid;
+                    const showAvatar = !isMe && (index === 0 || messages?.[index - 1]?.fromUid !== item?.fromUid);
 
                     return (
-                        <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
+                        <View style={[styles?.messageRow, isMe ? styles?.messageRowMe : styles?.messageRowThem]}>
                             {!isMe && showAvatar && (
-                                <View style={styles.messageAvatar}>
-                                    {item.authorPhoto ? (
-                                        <Image source={{ uri: item.authorPhoto }} style={styles.avatarImage} />
+                                <View style={styles?.messageAvatar}>
+                                    {item?.authorPhoto ? (
+                                        <Image source={{ uri: item?.authorPhoto }} style={styles?.avatarImage} />
                                     ) : (
-                                        <Text style={styles.messageAvatarText}>{item.authorName?.[0] || '?'}</Text>
+                                        <Text style={styles?.messageAvatarText}>{item?.authorName?.[0] || '?'}</Text>
                                     )}
                                 </View>
                             )}
-                            {!isMe && !showAvatar && <View style={styles.messageAvatarSpacer} />}
+                            {!isMe && !showAvatar && <View style={styles?.messageAvatarSpacer} />}
 
                             <View>
                                 {!isMe && showAvatar && (
-                                    <Text style={styles.authorNameText}>{item.authorName}</Text>
+                                    <Text style={styles?.authorNameText}>{item?.authorName}</Text>
                                 )}
-                                <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
-                                    <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextThem]}>{item.text}</Text>
+                                <View style={[styles?.messageBubble, isMe ? styles?.messageBubbleMe : styles?.messageBubbleThem]}>
+                                    <Text style={[styles?.messageText, isMe ? styles?.messageTextMe : styles?.messageTextThem]}>{item?.text}</Text>
                                 </View>
                             </View>
                         </View>
                     );
                 }}
-                contentContainerStyle={styles.messagesContent}
+                contentContainerStyle={styles?.messagesContent}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <View style={styles.emptyIconBox}>
+                    <View style={styles?.emptyContainer}>
+                        <View style={styles?.emptyIconBox}>
                             <Users size={32} color="#475569" />
                         </View>
-                        <Text style={styles.emptyText}>Say hi to the group!</Text>
+                        <Text style={styles?.emptyText}>Say hi to the group!</Text>
                     </View>
                 }
             />
 
             {/* Input */}
-            <View style={styles.inputContainer}>
+            <View style={styles?.inputContainer}>
                 <TextInput
                     value={text}
                     onChangeText={setText}
                     placeholder="Type a message..."
                     placeholderTextColor="#64748b"
-                    style={styles.input}
+                    style={styles?.input}
                     multiline
                     maxLength={1000}
                 />
                 <TouchableOpacity
-                    style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
+                    style={[styles?.sendButton, (!text.trim() || sending) && styles?.sendButtonDisabled]}
                     disabled={!text.trim() || sending}
                     onPress={handleSend}
                 >
@@ -217,69 +217,69 @@ export default function GroupChatScreen() {
 
             {/* Group Info Modal */}
             <Modal visible={showGroupInfo} animationType="slide" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Group Info</Text>
-                            <TouchableOpacity onPress={() => setShowGroupInfo(false)} style={styles.closeModalBtn}>
+                <View style={styles?.modalOverlay}>
+                    <View style={styles?.modalContent}>
+                        <View style={styles?.modalHeader}>
+                            <Text style={styles?.modalTitle}>Group Info</Text>
+                            <TouchableOpacity onPress={() => setShowGroupInfo(false)} style={styles?.closeModalBtn}>
                                 <X size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView style={styles.modalScroll}>
+                        <ScrollView style={styles?.modalScroll}>
                             {/* Host */}
-                            <Text style={styles.sectionTitle}>HOST</Text>
+                            <Text style={styles?.sectionTitle}>HOST</Text>
                             {members.filter(m => m.uid === groupPost?.uid).map(host => (
-                                <View key={host.uid} style={styles.memberCard}>
-                                    <View style={[styles.memberAvatar, { borderColor: 'rgba(59, 130, 246, 0.5)', borderWidth: 2 }]}>
-                                        {host.photoURL ? (
-                                            <Image source={{ uri: host.photoURL }} style={styles.avatarImage} />
+                                <View key={host?.uid} style={styles?.memberCard}>
+                                    <View style={[styles?.memberAvatar, { borderColor: 'rgba(59, 130, 246, 0.5)', borderWidth: 2 }]}>
+                                        {host?.photoURL ? (
+                                            <Image source={{ uri: host?.photoURL }} style={styles?.avatarImage} />
                                         ) : (
-                                            <Text style={styles.memberAvatarText}>{host.displayName[0]}</Text>
+                                            <Text style={styles?.memberAvatarText}>{host?.displayName?.[0]}</Text>
                                         )}
                                     </View>
-                                    <View style={styles.memberDetails}>
+                                    <View style={styles?.memberDetails}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={styles.memberName}>{host.displayName}</Text>
+                                            <Text style={styles?.memberName}>{host?.displayName}</Text>
                                             <Crown size={14} color="#3b82f6" style={{ marginLeft: 6 }} />
                                         </View>
-                                        <Text style={styles.memberRole}>Event Organizer</Text>
+                                        <Text style={styles?.memberRole}>Event Organizer</Text>
                                     </View>
-                                    <TouchableOpacity style={styles.viewBtn} onPress={() => { setShowGroupInfo(false); router.push(`/profile/${host.uid}`); }}>
-                                        <Text style={styles.viewBtnText}>View</Text>
+                                    <TouchableOpacity style={styles?.viewBtn} onPress={() => { setShowGroupInfo(false); router.push(`/profile/${host?.uid}`); }}>
+                                        <Text style={styles?.viewBtnText}>View</Text>
                                     </TouchableOpacity>
                                 </View>
                             ))}
 
                             {/* Attendees */}
-                            <View style={styles.sectionHeaderLine}>
-                                <Text style={styles.sectionTitle}>MEMBERS</Text>
-                                <Text style={styles.memberCount}>{members.filter(m => m.uid !== groupPost?.uid).length}</Text>
+                            <View style={styles?.sectionHeaderLine}>
+                                <Text style={styles?.sectionTitle}>MEMBERS</Text>
+                                <Text style={styles?.memberCount}>{members.filter(m => m?.uid !== groupPost?.uid)?.length}</Text>
                             </View>
 
-                            {members.filter(m => m.uid !== groupPost?.uid).length === 0 ? (
-                                <Text style={styles.emptyMembersText}>No other members yet.</Text>
+                            {members.filter(m => m?.uid !== groupPost?.uid)?.length === 0 ? (
+                                <Text style={styles?.emptyMembersText}>No other members yet.</Text>
                             ) : (
                                 members.filter(m => m.uid !== groupPost?.uid).map(member => (
-                                    <View key={member.uid} style={styles.memberCard}>
-                                        <View style={styles.memberAvatar}>
-                                            {member.photoURL ? (
-                                                <Image source={{ uri: member.photoURL }} style={styles.avatarImage} />
+                                    <View key={member?.uid} style={styles?.memberCard}>
+                                        <View style={styles?.memberAvatar}>
+                                            {member?.photoURL ? (
+                                                <Image source={{ uri: member?.photoURL }} style={styles?.avatarImage} />
                                             ) : (
-                                                <Text style={styles.memberAvatarText}>{member.displayName[0]}</Text>
+                                                <Text style={styles?.memberAvatarText}>{member?.displayName?.[0]}</Text>
                                             )}
                                         </View>
-                                        <View style={styles.memberDetails}>
-                                            <Text style={styles.memberName}>{member.displayName}</Text>
+                                        <View style={styles?.memberDetails}>
+                                            <Text style={styles?.memberName}>{member?.displayName}</Text>
                                         </View>
 
-                                        <View style={styles.memberActions}>
-                                            <TouchableOpacity style={styles.viewBtn} onPress={() => { setShowGroupInfo(false); router.push(`/profile/${member.uid}`); }}>
-                                                <Text style={styles.viewBtnText}>View</Text>
+                                        <View style={styles?.memberActions}>
+                                            <TouchableOpacity style={styles?.viewBtn} onPress={() => { setShowGroupInfo(false); router.push(`/profile/${member?.uid}`); }}>
+                                                <Text style={styles?.viewBtnText}>View</Text>
                                             </TouchableOpacity>
 
-                                            {user && groupPost && user.uid === groupPost.uid && (
-                                                <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemoveMember(member.uid)}>
+                                            {user && groupPost && user?.uid === groupPost?.uid && (
+                                                <TouchableOpacity style={styles?.removeBtn} onPress={() => handleRemoveMember(member?.uid)}>
                                                     <Trash2 size={16} color="#ef4444" />
                                                 </TouchableOpacity>
                                             )}

@@ -6,20 +6,20 @@ import { ChevronLeft, Shield } from 'lucide-react-native';
 import { colors, typography, spacing, radii } from '../constants/theme';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={styles?.section}>
+        <Text style={styles?.sectionTitle}>{title}</Text>
         {children}
     </View>
 );
 
-const Body = ({ children }: { children: string }) => (
+const Body = ({ children }: { children: React.ReactNode }) => (
     <Text style={styles.body}>{children}</Text>
 );
 
 const Bullet = ({ children }: { children: string }) => (
-    <View style={styles.bulletRow}>
-        <Text style={styles.bulletDot}>•</Text>
-        <Text style={styles.bulletText}>{children}</Text>
+    <View style={styles?.bulletRow}>
+        <Text style={styles?.bulletDot}>•</Text>
+        <Text style={styles?.bulletText}>{children}</Text>
     </View>
 );
 
@@ -28,29 +28,29 @@ export default function PrivacyPolicyScreen() {
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles?.container, { paddingTop: insets?.top }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.backBtn}>
                     <ChevronLeft size={26} color={colors.textSecondary} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Privacy Policy</Text>
+                <Text style={styles?.title}>Privacy Policy</Text>
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles?.scroll} showsVerticalScrollIndicator={false}>
                 {/* Hero */}
-                <View style={styles.hero}>
-                    <View style={styles.iconBox}>
+                <View style={styles?.hero}>
+                    <View style={styles?.iconBox}>
                         <Shield size={32} color={colors.primary} />
                     </View>
-                    <Text style={styles.heroTitle}>Your Privacy Matters</Text>
-                    <Text style={styles.heroSub}>Last updated: March 2026</Text>
+                    <Text style={styles?.heroTitle}>Your Privacy Matters</Text>
+                    <Text style={styles?.heroSub}>Last updated: March 2026</Text>
                 </View>
 
                 <Section title="1. Introduction">
                     <Body>
-                        Welcome to Orbyt ("We", "Us", or "Our"). We are committed to protecting your privacy and ensuring your personal data is handled securely and responsibly. This Privacy Policy explains how we collect, use, and share information when you use the Orbyt application.
+                        Welcome to Orbyt (&quot;We&quot;, &quot;Us&quot;, or &quot;Our&quot;). We are committed to protecting your privacy and ensuring your personal data is handled securely and responsibly. This Privacy Policy explains how we collect, use, and share information when you use the Orbyt application.
                     </Body>
                 </Section>
 
@@ -99,7 +99,7 @@ export default function PrivacyPolicyScreen() {
                     </Body>
                 </Section>
 
-                <Text style={styles.footer}>© 2026 Orbyt Inc. All rights reserved.</Text>
+                <Text style={styles?.footer}>© 2026 Orbyt Inc. All rights reserved.</Text>
             </ScrollView>
         </View>
     );
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.border0,
     },
     backBtn: { width: 40, height: 40, justifyContent: 'center' },
-    title: { color: colors.textPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.bold },
+    title: { color: colors.textPrimary, fontSize: typography.size?.lg, fontWeight: typography.weight?.bold },
     scroll: { padding: spacing.s5, paddingBottom: 60, gap: spacing.s5 },
 
     // Hero block
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.s4,
     },
-    heroTitle: { color: colors.textPrimary, fontSize: typography.size['2xl'], fontWeight: typography.weight.extrabold, marginBottom: spacing.s2 },
-    heroSub: { color: colors.textTertiary, fontSize: typography.size.sm },
+    heroTitle: { color: colors.textPrimary, fontSize: typography.size?.['2xl'], fontWeight: typography.weight?.extrabold, marginBottom: spacing.s2 },
+    heroSub: { color: colors.textTertiary, fontSize: typography.size?.sm },
 
     // Sections
     section: {
@@ -147,18 +147,18 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         color: colors.textPrimary,
-        fontSize: typography.size.base,
-        fontWeight: typography.weight.bold,
+        fontSize: typography.size?.base,
+        fontWeight: typography.weight?.bold,
         marginBottom: spacing.s1,
     },
     body: {
         color: colors.textSecondary,
-        fontSize: typography.size.sm,
-        lineHeight: typography.size.sm * 1.7,
+        fontSize: typography.size?.sm,
+        lineHeight: typography.size?.sm * 1.7,
     },
     bulletRow: { flexDirection: 'row', gap: spacing.s2 },
-    bulletDot: { color: colors.primary, fontSize: typography.size.base, lineHeight: typography.size.sm * 1.7 },
-    bulletText: { flex: 1, color: colors.textSecondary, fontSize: typography.size.sm, lineHeight: typography.size.sm * 1.7 },
+    bulletDot: { color: colors.primary, fontSize: typography.size?.base, lineHeight: typography.size?.sm * 1.7 },
+    bulletText: { flex: 1, color: colors.textSecondary, fontSize: typography.size?.sm, lineHeight: typography.size?.sm * 1.7 },
 
-    footer: { color: colors.textTertiary, fontSize: typography.size.xs, textAlign: 'center', marginTop: spacing.s4 },
+    footer: { color: colors.textTertiary, fontSize: typography.size?.xs, textAlign: 'center', marginTop: spacing.s4 },
 });

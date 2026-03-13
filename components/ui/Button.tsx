@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { Animated, TouchableWithoutFeedback, ActivityIndicator, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { colors, typography, radii, spacing, animation, MIN_TOUCH } from '../../constants/theme';
+import { ActivityIndicator, Animated, StyleSheet, Text, TouchableWithoutFeedback, ViewStyle } from 'react-native';
+import { animation, colors, MIN_TOUCH, radii, spacing, typography } from '../../constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 type Size = 'sm' | 'md' | 'lg';

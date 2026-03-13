@@ -1,26 +1,26 @@
-import React, { useEffect, useRef, useState } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter, useFocusEffect } from "expo-router";
+import { Briefcase, Heart, Info, MapPin, SearchX, X } from "lucide-react-native";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
     ActivityIndicator,
     Animated,
+    Image,
     PanResponder,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from "expo-router";
-import { Briefcase, MapPin, SearchX, Heart, X, Info } from "lucide-react-native";
-import { useAuth } from "../../context/AuthContext";
-import { api } from "../../services/api";
 import { useUserLocation } from "../../components/LocationGuard";
-import { calculateDistance } from "../../util/location";
-import { POPULAR_INTERESTS, UserProfile } from "../../types";
 import Avatar from "../../components/ui/Avatar";
 import EmptyState from "../../components/ui/EmptyState";
-import { colors, typography, spacing, radii, screen } from "../../constants/theme";
+import { colors, radii, screen, spacing, typography } from "../../constants/theme";
+import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
+import { POPULAR_INTERESTS, UserProfile } from "../../types";
+import { calculateDistance } from "../../util/location";
 
 const SWIPE_THRESHOLD = screen.width * 0.30;
 const CARD_WIDTH = screen.width - spacing.s5 * 2;
@@ -213,48 +213,52 @@ export default function DiscoverScreen() {
     const [profiles, setProfiles] = useState<UserProfile[]>([]);
     const [cardIndex, setCardIndex] = useState(0);
 
-    useEffect(() => {
-        const fetchDiscover = async () => {
-            if (!user) return;
+    const fetchDiscover = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const [allUsers, myProf] = await Promise.all([
+                api.profile.getAllWithLocation(user.uid),
+                api.profile.get(user.uid),
+            ]);
+            const maxDistMeters = (myProf?.discoveryRadius || 10) * 1000;
+            
+            let localSwiped: string[] = [];
             try {
-                const [allUsers, myProf] = await Promise.all([
-                    api.profile.getAllWithLocation(user.uid),
-                    api.profile.get(user.uid),
-                ]);
-                const maxDistMeters = (myProf?.discoveryRadius || 10) * 1000;
-                
-                let localSwiped: string[] = [];
-                try {
-                    const stored = await AsyncStorage.getItem(`swipedUsers_${user.uid}`);
-                    if (stored) localSwiped = JSON.parse(stored);
-                } catch (e) {}
+                const stored = await AsyncStorage.getItem(`swipedUsers_${user.uid}`);
+                if (stored) localSwiped = JSON.parse(stored);
+            } catch (e) {}
 
-                const excluded = new Set<string>([
-                    user.uid,
-                    ...(myProf?.friends || []),
-                    ...(myProf?.outgoingRequests || []),
-                    ...(myProf?.incomingRequests || []),
-                    ...(myProf?.blockedUsers || []),
-                    ...localSwiped,
-                ]);
-                const filtered = allUsers.filter((u: any) => {
-                    if (excluded.has(u.uid) || u.isDiscoverable === false || !u.lastLocation || !myLocation) return false;
-                    const R = 6371e3, rad = Math.PI / 180;
-                    const [lat1, lng1, lat2, lng2] = [myLocation.lat, myLocation.lng, u.lastLocation.lat, u.lastLocation.lng];
-                    const a =
-                        Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
-                        Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
-                    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) <= maxDistMeters;
-                });
-                setProfiles(filtered);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDiscover();
-    }, [user, myLocation]);
+            const excluded = new Set<string>([
+                user.uid,
+                ...(myProf?.friends || []),
+                ...(myProf?.outgoingRequests || []),
+                ...(myProf?.incomingRequests || []),
+                ...(myProf?.blockedUsers || []),
+                ...localSwiped,
+            ]);
+            const filtered = allUsers.filter((u: any) => {
+                if (excluded.has(u.uid) || u.isDiscoverable === false || !u.lastLocation || !myLocation) return false;
+                const R = 6371e3, rad = Math.PI / 180;
+                const [lat1, lng1, lat2, lng2] = [myLocation.lat, myLocation.lng, u.lastLocation.lat, u.lastLocation.lng];
+                const a =
+                    Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
+                    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) <= maxDistMeters;
+            });
+            setProfiles(filtered);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchDiscover();
+        }, [user, myLocation])
+    );
 
     const recordSwipe = async (targetUid: string) => {
         if (!user) return;

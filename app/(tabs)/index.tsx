@@ -1,19 +1,18 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Animated, Image, Alert, Platform } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from "expo-router";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useFocusEffect, useRouter } from "expo-router";
 import { Bell, Settings, Sparkles } from "lucide-react-native";
+import React, { useCallback, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUserLocation } from "../../components/LocationGuard";
+import PostItem from "../../components/PostItem";
+import Avatar from "../../components/ui/Avatar";
+import EmptyState from "../../components/ui/EmptyState";
+import { colors, spacing, typography } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { api } from "../../services/api";
-import { useUserLocation } from "../../components/LocationGuard";
 import { Post, UserProfile } from "../../types";
-import PostItem from "../../components/PostItem";
-import { calculateDistance } from "../../util/location";
-import Avatar from "../../components/ui/Avatar";
-import Badge from "../../components/ui/Badge";
-import EmptyState from "../../components/ui/EmptyState";
-import { colors, typography, spacing, radii, animation } from "../../constants/theme";
 
 const getDistanceMeters = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   const R = 6371e3, rad = Math.PI / 180;
@@ -57,7 +56,12 @@ export default function Feed() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchPosts(); }, [user, myLocation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPosts();
+    }, [user, myLocation])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

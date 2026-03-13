@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { Platform, AppState, AppStateStatus } from "react-native";
 import * as Haptics from 'expo-haptics';
-import { api } from "../services/api";
+import { api, wsManager } from "../services/api";
 import { Notification } from "../types";
 import { useAuth } from "./AuthContext";
 
@@ -133,6 +133,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user) return;
 
     let isMounted = true;
+    let notificationListener: any;
+    let responseListener: any;
+
     registerForPushNotificationsAsync().then((token) => {
       if (token && isMounted) {
         setPushToken(token);
@@ -140,18 +143,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     });
 
-    let notificationListener: any;
-    let responseListener: any;
-    let Notifications: any;
-
     if (Constants.appOwnership !== "expo") {
       try {
-        Notifications = require("expo-notifications");
+        const Notifications = require("expo-notifications");
         // Listen for foreground notifications
         notificationListener = Notifications.addNotificationReceivedListener(
           (notification: any) => {
-            // Optional: you can manually update the context state if the push notification payload
-            // matches your Notification type, but the websocket might also do it.
+            // Foreground Push Notification Received
           },
         );
 
@@ -200,61 +198,44 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   // Real-time WebSocket subscription for incoming notifications
   useEffect(() => {
     if (!user) return;
-
-    const wsUrl = `wss://orbyt.strangerchat.space?uid=${user.uid}`;
-    let isSubscribed = true;
-    let reconnectTimeout: any;
-
-    const connect = () => {
-      if (!isSubscribed) return;
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        keepAliveRef.current = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
-          }
-        }, 30000);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "notification" && data.notification) {
-            setNotifications((prev) => {
-              if (prev.find((n) => n._id === data.notification._id))
-                return prev;
-
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              return [data.notification as Notification, ...prev];
-            });
-          }
-        } catch (e) {
-          // non-JSON or unrelated message
-        }
-      };
-
-      ws.onclose = () => {
-        clearInterval(keepAliveRef.current);
-        if (isSubscribed) {
-          reconnectTimeout = setTimeout(connect, 3000);
-        }
-      };
-
-      ws.onerror = () => {
-        // close the socket to trigger onclose and attempt a reconnect
-        ws.close();
-      };
+    
+    const playSound = async (type: 'message' | 'notification') => {
+      try {
+        const { Audio } = require('expo-av');
+        const source = type === 'message' 
+          ? require('../../assets/sounds/message.wav')
+          : require('../../assets/sounds/notification.wav');
+        const { sound } = await Audio.Sound.createAsync(source);
+        await sound.playAsync();
+        sound.setOnPlaybackStatusUpdate((status: any) => {
+          if (status.didJustFinish) sound.unloadAsync();
+        });
+      } catch (e) {
+        console.log("Failed to play sound", e);
+      }
     };
 
-    connect();
+    const unsubscribe = wsManager.subscribe(user.uid, (data: any) => {
+        if (data.type === "notification" && data.notification) {
+          setNotifications((prev) => {
+            if (prev.find((n) => n._id === data.notification._id))
+              return prev;
+
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            playSound('notification');
+            return [data.notification as Notification, ...prev];
+          });
+        } else if (data.text || data.type === 'message') {
+            // Incoming message
+            if (data.fromUid !== user.uid && data.fromUid !== 'system') {
+               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               playSound('message');
+            }
+        }
+    });
 
     return () => {
-      isSubscribed = false;
-      clearInterval(keepAliveRef.current);
-      clearTimeout(reconnectTimeout);
-      wsRef.current?.close();
+      unsubscribe();
     };
   }, [user]);
 

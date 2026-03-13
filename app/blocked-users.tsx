@@ -17,9 +17,9 @@ export default function BlockedUsersScreen() {
         const fetchBlockedUsers = async () => {
             if (!user) return;
             try {
-                const profile = await api.profile.get(user.uid);
-                if (profile && profile.blockedUsers?.length) {
-                    const blocked = await api.profile.getBatch(profile.blockedUsers);
+                const profile = await api.profile.get(user?.uid);
+                if (profile && profile?.blockedUsers?.length) {
+                    const blocked = await api.profile.getBatch(profile?.blockedUsers);
                     setBlockedUsers(blocked);
                 } else {
                     setBlockedUsers([]);
@@ -36,55 +36,55 @@ export default function BlockedUsersScreen() {
     const handleUnblock = async (targetUid: string) => {
         if (!user) return;
         try {
-            await api.userAction.unblock(user.uid, targetUid);
-            setBlockedUsers(prev => prev.filter(u => u.uid !== targetUid));
+            await api.userAction.unblock(user?.uid, targetUid);
+            setBlockedUsers(prev => prev.filter(u => u?.uid !== targetUid));
         } catch (e) {
             Alert.alert("Error", "Failed to unblock user");
         }
     };
 
     return (
-        <View style={styles.container}>
+        <View style={styles?.container}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.backButton}>
                     <ChevronLeft size={24} color="#f8fafc" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Blocked Users</Text>
+                <Text style={styles?.headerTitle}>Blocked Users</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             {loading ? (
-                <View style={styles.center}>
+                <View style={styles?.center}>
                     <ActivityIndicator size="large" color="#3b82f6" />
                 </View>
-            ) : blockedUsers.length === 0 ? (
-                <View style={styles.center}>
-                    <Text style={styles.emptyText}>You haven't blocked anyone.</Text>
+            ) : blockedUsers?.length === 0 ? (
+                <View style={styles?.center}>
+                    <Text style={styles?.emptyText}>You haven&apos;t blocked anyone.</Text>
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.scrollArea}>
-                    <View style={styles.cardList}>
+                <ScrollView contentContainerStyle={styles?.scrollArea}>
+                    <View style={styles?.cardList}>
                         {blockedUsers.map((u, i) => (
-                            <View key={u.uid} style={[styles.listItem, i === blockedUsers.length - 1 && { borderBottomWidth: 0 }]}>
-                                <View style={styles.userInfo}>
-                                    <View style={styles.avatar}>
-                                        {u.photoURL ? (
-                                            <Image source={{ uri: u.photoURL }} style={styles.avatarImage} />
+                            <View key={u?.uid} style={[styles?.listItem, i === blockedUsers?.length - 1 && { borderBottomWidth: 0 }]}>
+                                <View style={styles?.userInfo}>
+                                    <View style={styles?.avatar}>
+                                        {u?.photoURL ? (
+                                            <Image source={{ uri: u?.photoURL }} style={styles?.avatarImage} />
                                         ) : (
-                                            <Text style={styles.avatarText}>{u.displayName?.[0]?.toUpperCase() || '?'}</Text>
+                                            <Text style={styles?.avatarText}>{u?.displayName?.[0]?.toUpperCase() || '?'}</Text>
                                         )}
                                     </View>
                                     <View>
-                                        <Text style={styles.userName}>{u.displayName}</Text>
-                                        <Text style={styles.userSubtitle}>Blocked</Text>
+                                        <Text style={styles?.userName}>{u?.displayName}</Text>
+                                        <Text style={styles?.userSubtitle}>Blocked</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity
-                                    style={styles.unblockBtn}
-                                    onPress={() => handleUnblock(u.uid)}
+                                    style={styles?.unblockBtn}
+                                    onPress={() => handleUnblock(u?.uid)}
                                 >
-                                    <Text style={styles.unblockText}>Unblock</Text>
+                                    <Text style={styles?.unblockText}>Unblock</Text>
                                 </TouchableOpacity>
                             </View>
                         ))}

@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from "expo-router";
-import { AlertCircle, Calendar, ChevronDown, ChevronLeft, Clock, DollarSign, Image as ImageIcon, Link as LinkIcon, MapPin, PartyPopper, Type, Users, X } from "lucide-react-native";
+import { AlertCircle, Calendar, ChevronLeft, Clock, DollarSign, Image as ImageIcon, Link as LinkIcon, MapPin, PartyPopper, Type, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import DateTimePicker from '@react-native-community/datetimepicker';
-import DropdownPicker from "../components/ui/DropdownPicker";
 import { useUserLocation } from "../components/LocationGuard";
+import DropdownPicker from "../components/ui/DropdownPicker";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { FEE_TYPES, MEETUP_ACTIVITIES } from "../types";
@@ -69,20 +70,20 @@ export default function CreatePostScreen() {
 
     const handleImageUpload = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) {
+        if (permissionResult?.granted === false) {
             alert("You've refused to allow this app to access your photos!");
             return;
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions?.Images,
             allowsEditing: true,
             quality: 0.7,
             base64: true,
         });
 
-        if (!result.canceled && result.assets[0]?.base64) {
-            setImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+        if (!result?.canceled && result?.assets?.[0]?.base64) {
+            setImage(`data:image/jpeg;base64,${result?.assets?.[0]?.base64}`);
         }
     };
 
@@ -103,14 +104,14 @@ export default function CreatePostScreen() {
         try {
             let profile = null;
             try {
-                profile = await api.profile.get(user.uid);
+                profile = await api.profile.get(user?.uid);
             } catch (e) {
                 console.warn("Could not fetch profile", e);
             }
 
             const payload: any = {
-                uid: user.uid,
-                authorName: profile?.displayName || user.email?.split("@")[0] || "User",
+                uid: user?.uid,
+                authorName: profile?.displayName || user?.email?.split("@")[0] || "User",
                 authorPhoto: profile?.photoURL || "",
                 content: postType === "regular" ? content : content || meetupTitle,
                 imageURL: image || undefined,
@@ -154,7 +155,7 @@ export default function CreatePostScreen() {
         setShowDatePicker(false);
         if (selectedDate) {
             setDateObj(selectedDate);
-            setDate(selectedDate.toISOString().split('T')[0]);
+            setDate(selectedDate.toISOString().split('T')?.[0]);
         }
     };
 
@@ -180,51 +181,51 @@ export default function CreatePostScreen() {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={styles?.container}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.headerBtn}>
                     <ChevronLeft size={28} color="#94a3b8" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Create</Text>
+                <Text style={styles?.headerTitle}>Create</Text>
                 <TouchableOpacity
                     onPress={handleSubmit}
                     disabled={!isFormValid() || loading}
-                    style={[styles.headerBtn, { alignItems: 'flex-end', opacity: (!isFormValid() || loading) ? 0.5 : 1 }]}
+                    style={[styles?.headerBtn, { alignItems: 'flex-end', opacity: (!isFormValid() || loading) ? 0.5 : 1 }]}
                 >
                     {loading ? (
                         <ActivityIndicator size="small" color="#3b82f6" />
                     ) : (
-                        <Text style={styles.headerAction}>{postType === "meetup" ? "Create" : "Post"}</Text>
+                        <Text style={styles?.headerAction}>{postType === "meetup" ? "Create" : "Post"}</Text>
                     )}
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles?.scrollContent}>
 
                 {/* Toggle Switch */}
-                <View style={styles.tabContainer}>
+                <View style={styles?.tabContainer}>
                     <TouchableOpacity
-                        style={[styles.tabBtn, postType === 'regular' && styles.tabBtnActive]}
+                        style={[styles?.tabBtn, postType === 'regular' && styles?.tabBtnActive]}
                         onPress={() => setPostType('regular')}
                     >
                         <Type size={16} color={postType === 'regular' ? '#fff' : '#64748b'} />
-                        <Text style={[styles.tabText, postType === 'regular' && styles.tabTextActive]}>Post</Text>
+                        <Text style={[styles?.tabText, postType === 'regular' && styles?.tabTextActive]}>Post</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.tabBtn, postType === 'meetup' && styles.tabBtnMeetupActive]}
+                        style={[styles?.tabBtn, postType === 'meetup' && styles?.tabBtnMeetupActive]}
                         onPress={() => setPostType('meetup')}
                     >
                         <PartyPopper size={16} color={postType === 'meetup' ? '#fff' : '#64748b'} />
-                        <Text style={[styles.tabText, postType === 'meetup' && styles.tabTextActive]}>Meet Up</Text>
+                        <Text style={[styles?.tabText, postType === 'meetup' && styles?.tabTextActive]}>Meet Up</Text>
                     </TouchableOpacity>
                 </View>
 
                 {postType === "regular" ? (
                     <TextInput
-                        style={styles.textArea}
+                        style={styles?.textArea}
                         placeholder="What's on your mind?"
                         placeholderTextColor="#64748b"
                         value={content}
@@ -233,17 +234,17 @@ export default function CreatePostScreen() {
                         autoFocus
                     />
                 ) : (
-                    <View style={styles.meetupForm}>
+                    <View style={styles?.meetupForm}>
                         <TextInput
-                            style={styles.meetupTitleInput}
+                            style={styles?.meetupTitleInput}
                             placeholder="Event Title (e.g. Sunday Morning Run)"
                             placeholderTextColor="#64748b"
                             value={meetupTitle}
                             onChangeText={setMeetupTitle}
                         />
 
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>ACTIVITY</Text>
+                        <View style={styles?.fieldGroup}>
+                            <Text style={styles?.fieldLabel}>ACTIVITY</Text>
                             <DropdownPicker
                                 value={activity}
                                 options={MEETUP_ACTIVITIES}
@@ -253,11 +254,11 @@ export default function CreatePostScreen() {
                         </View>
 
 
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>DATE (YYYY-MM-DD)</Text>
-                            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.inputWithIcon, { paddingVertical: 14 }]}>
+                        <View style={styles?.fieldGroup}>
+                            <Text style={styles?.fieldLabel}>DATE (YYYY-MM-DD)</Text>
+                            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles?.inputWithIcon, { paddingVertical: 14 }]}>
                                 <Calendar size={18} color="#64748b" />
-                                <Text style={[styles.inlineInput, { color: date ? '#fff' : '#64748b' }]}>{date || 'Select Date'}</Text>
+                                <Text style={[styles?.inlineInput, { color: date ? '#fff' : '#64748b' }]}>{date || 'Select Date'}</Text>
                             </TouchableOpacity>
                             {showDatePicker && (
                                 <DateTimePicker
@@ -270,13 +271,13 @@ export default function CreatePostScreen() {
                             )}
                         </View>
 
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>TIME (HH:MM)</Text>
-                            <View style={[styles.inputWithIcon, { paddingVertical: 14 }]}>
+                        <View style={styles?.fieldGroup}>
+                            <Text style={styles?.fieldLabel}>TIME (HH:MM)</Text>
+                            <View style={[styles?.inputWithIcon, { paddingVertical: 14 }]}>
                                 <Clock size={18} color="#64748b" />
 
                                 <TouchableOpacity onPress={() => setShowStartTimePicker(true)} style={{ flex: 1 }}>
-                                    <Text style={[styles.inlineInput, { color: startTime ? '#fff' : '#64748b' }]}>{startTime || 'Start'}</Text>
+                                    <Text style={[styles?.inlineInput, { color: startTime ? '#fff' : '#64748b' }]}>{startTime || 'Start'}</Text>
                                 </TouchableOpacity>
                                 {showStartTimePicker && (
                                     <DateTimePicker
@@ -290,7 +291,7 @@ export default function CreatePostScreen() {
                                 <Text style={{ color: '#64748b', marginHorizontal: 8 }}>-</Text>
 
                                 <TouchableOpacity onPress={() => setShowEndTimePicker(true)} style={{ flex: 1 }}>
-                                    <Text style={[styles.inlineInput, { color: endTime ? '#fff' : '#64748b' }]}>{endTime || 'End'}</Text>
+                                    <Text style={[styles?.inlineInput, { color: endTime ? '#fff' : '#64748b' }]}>{endTime || 'End'}</Text>
                                 </TouchableOpacity>
                                 {showEndTimePicker && (
                                     <DateTimePicker
@@ -303,16 +304,16 @@ export default function CreatePostScreen() {
                             </View>
                         </View>
 
-                        <View style={styles.row}>
-                            <View style={[styles.fieldGroup, { flex: 1, marginRight: 8 }]}>
-                                <Text style={styles.fieldLabel}>MAX GUESTS</Text>
-                                <View style={styles.inputWithIcon}>
+                        <View style={styles?.row}>
+                            <View style={[styles?.fieldGroup, { flex: 1, marginRight: 8 }]}>
+                                <Text style={styles?.fieldLabel}>MAX GUESTS</Text>
+                                <View style={styles?.inputWithIcon}>
                                     <Users size={18} color="#64748b" />
-                                    <TextInput style={styles.inlineInput} placeholder="Unlimited" placeholderTextColor="#64748b" value={maxGuests} onChangeText={setMaxGuests} keyboardType="numeric" />
+                                    <TextInput style={styles?.inlineInput} placeholder="Unlimited" placeholderTextColor="#64748b" value={maxGuests} onChangeText={setMaxGuests} keyboardType="numeric" />
                                 </View>
                             </View>
-                            <View style={[styles.fieldGroup, { flex: 1, marginLeft: 8 }]}>
-                                <Text style={styles.fieldLabel}>FEE TYPE</Text>
+                            <View style={[styles?.fieldGroup, { flex: 1, marginLeft: 8 }]}>
+                                <Text style={styles?.fieldLabel}>FEE TYPE</Text>
                                 <DropdownPicker
                                     value={feeType}
                                     options={FEE_TYPES}
@@ -323,19 +324,19 @@ export default function CreatePostScreen() {
                         </View>
 
                         {feeType === 'Attendance fee applicable' && (
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.fieldLabel}>FEE AMOUNT</Text>
-                                <View style={styles.inputWithIcon}>
+                            <View style={styles?.fieldGroup}>
+                                <Text style={styles?.fieldLabel}>FEE AMOUNT</Text>
+                                <View style={styles?.inputWithIcon}>
                                     <DollarSign size={18} color="#64748b" />
-                                    <TextInput style={styles.inlineInput} placeholder="Amount" placeholderTextColor="#64748b" value={feeAmount} onChangeText={setFeeAmount} keyboardType="numeric" />
+                                    <TextInput style={styles?.inlineInput} placeholder="Amount" placeholderTextColor="#64748b" value={feeAmount} onChangeText={setFeeAmount} keyboardType="numeric" />
                                 </View>
                             </View>
                         )}
 
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>DETAILS</Text>
+                        <View style={styles?.fieldGroup}>
+                            <Text style={styles?.fieldLabel}>DETAILS</Text>
                             <TextInput
-                                style={styles.detailsArea}
+                                style={styles?.detailsArea}
                                 placeholder="Describe the plan, meeting point details, etc..."
                                 placeholderTextColor="#64748b"
                                 value={content}
@@ -344,11 +345,11 @@ export default function CreatePostScreen() {
                             />
                         </View>
 
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>LINK (OPTIONAL)</Text>
-                            <View style={styles.inputWithIcon}>
+                        <View style={styles?.fieldGroup}>
+                            <Text style={styles?.fieldLabel}>LINK (OPTIONAL)</Text>
+                            <View style={styles?.inputWithIcon}>
                                 <LinkIcon size={18} color="#64748b" />
-                                <TextInput style={styles.inlineInput} placeholder="https://" placeholderTextColor="#64748b" value={meetupUrl} onChangeText={setMeetupUrl} autoCapitalize="none" />
+                                <TextInput style={styles?.inlineInput} placeholder="https://" placeholderTextColor="#64748b" value={meetupUrl} onChangeText={setMeetupUrl} autoCapitalize="none" />
                             </View>
                         </View>
 
@@ -357,9 +358,9 @@ export default function CreatePostScreen() {
 
                 {/* Image Preview */}
                 {image && (
-                    <View style={styles.imagePreviewContainer}>
-                        <Image source={{ uri: image }} style={styles.imagePreview} resizeMode="cover" />
-                        <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => setImage(null)}>
+                    <View style={styles?.imagePreviewContainer}>
+                        <Image source={{ uri: image }} style={styles?.imagePreview} resizeMode="cover" />
+                        <TouchableOpacity style={styles?.imageRemoveBtn} onPress={() => setImage(null)}>
                             <X size={20} color="#fff" />
                         </TouchableOpacity>
                     </View>
@@ -367,24 +368,24 @@ export default function CreatePostScreen() {
 
                 {/* Error */}
                 {error && (
-                    <View style={styles.errorBox}>
+                    <View style={styles?.errorBox}>
                         <AlertCircle size={20} color="#f87171" />
-                        <Text style={styles.errorText}>{error}</Text>
+                        <Text style={styles?.errorText}>{error}</Text>
                     </View>
                 )}
             </ScrollView>
 
             {/* Footer Tools */}
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.addPhotoBtn} onPress={handleImageUpload}>
+            <View style={styles?.footer}>
+                <TouchableOpacity style={styles?.addPhotoBtn} onPress={handleImageUpload}>
                     <ImageIcon size={20} color="#3b82f6" />
-                    <Text style={styles.addPhotoText}>{image ? "Change Photo" : "Add Photo"}</Text>
+                    <Text style={styles?.addPhotoText}>{image ? "Change Photo" : "Add Photo"}</Text>
                 </TouchableOpacity>
 
                 {locationName && (
-                    <View style={styles.locationBadge}>
+                    <View style={styles?.locationBadge}>
                         <MapPin size={12} color="#94a3b8" />
-                        <Text style={styles.locationBadgeText}>{locationName}</Text>
+                        <Text style={styles?.locationBadgeText}>{locationName}</Text>
                     </View>
                 )}
             </View>

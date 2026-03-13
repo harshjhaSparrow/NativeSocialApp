@@ -1,6 +1,6 @@
+import { Check, ChevronDown } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TouchableWithoutFeedback } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
+import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 interface DropdownPickerProps {
     value: string;

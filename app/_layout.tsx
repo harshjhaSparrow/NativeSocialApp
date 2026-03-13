@@ -1,9 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { NotificationProvider } from '../context/NotificationContext';
 import { api } from '../services/api';
@@ -19,8 +19,8 @@ function RootNavigation() {
     const checkProfile = async () => {
       if (user) {
         try {
-          const profile = await api.profile.get(user.uid);
-          const isOnboarded = !!profile && Array.isArray(profile.interests) && profile.interests.length > 0;
+          const profile = await api.profile.get(user?.uid);
+          const isOnboarded = !!profile && Array.isArray(profile?.interests) && profile?.interests?.length > 0;
           setHasProfile(isOnboarded);
         } catch (e) {
           console.error("Error checking profile", e);
@@ -42,8 +42,8 @@ function RootNavigation() {
   useEffect(() => {
     if (status === 'loading' || (status === 'authenticated' && !profileChecked)) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inOnboardingGroup = segments[0] === '(onboarding)';
+    const inAuthGroup = segments?.[0] === '(auth)';
+    const inOnboardingGroup = segments?.[0] === '(onboarding)';
 
     if (status === 'unauthenticated' && !inAuthGroup) {
       router.replace('/(auth)/login');

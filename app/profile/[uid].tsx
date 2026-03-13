@@ -1,8 +1,8 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ban, Briefcase, Check, ChevronRight, Clock, Edit2, Eye, LogOut, MapPin, MessageCircle, Navigation, UserCheck, UserPlus, Users, X, Instagram } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from "react-native";
 import * as LocationExpo from 'expo-location';
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Ban, Briefcase, Check, ChevronRight, Clock, Edit2, Eye, Instagram, LogOut, MapPin, MessageCircle, UserCheck, UserPlus, Users, X } from "lucide-react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useUserLocation } from "../../components/LocationGuard";
 import PostItem from "../../components/PostItem";
 import { useAuth } from "../../context/AuthContext";
@@ -24,7 +24,9 @@ export default function UserProfileScreen() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"regular" | "meetup">("regular");
     const [myPosts, setMyPosts] = useState<Post[]>([]);
-    const filteredPosts = myPosts?.filter((post) => post?.type === activeTab) || [];
+   const filteredPosts = useMemo(() => {
+    return myPosts?.filter(post => post?.type === activeTab);
+}, [myPosts, activeTab]);
 
     const [locationName, setLocationName] = useState<string>("");
     const [friendRequests, setFriendRequests] = useState<UserProfile[]>([]);
@@ -98,14 +100,14 @@ export default function UserProfileScreen() {
                 // Location name: use stored name, reverse geocode, or omit
                 const loc = userProfile?.lastLocation;
                 if (loc?.name) {
-                    setLocationName(loc.name);
+                    setLocationName(loc?.name);
                 } else if (loc?.lat && loc?.lng) {
                     try {
-                        const results = await LocationExpo.reverseGeocodeAsync({ latitude: loc.lat, longitude: loc.lng });
-                        if (results && results.length > 0) {
-                            const addr = results[0];
-                            const city = addr.city || addr.subregion || addr.district || addr.region || '';
-                            const state = addr.region || '';
+                        const results = await LocationExpo.reverseGeocodeAsync({ latitude: loc?.lat, longitude: loc?.lng });
+                        if (results && results?.length > 0) {
+                            const addr = results?.[0];
+                            const city = addr?.city || addr?.subregion || addr?.district || addr?.region || '';
+                            const state = addr?.region || '';
                             const name = (city && state && city !== state) ? `${city}, ${state}` : city || state || 'Nearby';
                             setLocationName(name);
                             // Cache it so future loads skip geocoding
@@ -242,14 +244,14 @@ export default function UserProfileScreen() {
 
 
         try {
-            const friendsIds = profile.friends || [];
+            const friendsIds = profile?.friends || [];
             const friendsData = await api.profile.getBatch(friendsIds);
             setFriendsList(friendsData);
 
             // only show sent requests on your own profile
-            const pendingIds = isOwnProfile ? profile.outgoingRequests || [] : [];
+            const pendingIds = isOwnProfile ? profile?.outgoingRequests || [] : [];
 
-            if (pendingIds.length > 0) {
+            if (pendingIds?.length > 0) {
                 const pendingData = await api.profile.getBatch(pendingIds);
                 setSentRequestsList(pendingData);
             } else {
@@ -342,7 +344,7 @@ export default function UserProfileScreen() {
                         {profile?.photoURL ? (
                             <Image source={{ uri: profile?.photoURL }} style={styles?.avatarImage} />
                         ) : (
-                            <Text style={styles?.avatarText}>{profile.displayName?.[0] || "U"}</Text>
+                            <Text style={styles?.avatarText}>{profile?.displayName?.[0] || "U"}</Text>
                         )}
                         <View style={styles?.onlineBadge} />
                     </View>
@@ -425,7 +427,7 @@ export default function UserProfileScreen() {
                         {profile?.instagramHandle && (
                             <TouchableOpacity
                                 style={[styles?.actionBtn, { backgroundColor: '#e1306c', borderColor: '#e1306c' }]}
-                                onPress={() => Linking.openURL(`https://instagram.com/${profile.instagramHandle}`)}
+                                onPress={() => Linking.openURL(`https://instagram.com/${profile?.instagramHandle}`)}
                             >
                                 <Instagram size={20} color="#fff" />
                                 <Text style={styles?.primaryBtnText}>Instagram</Text>
@@ -518,7 +520,7 @@ export default function UserProfileScreen() {
 
             {/* Modals */}
             {isFriendsModalOpen && (
-                <View style={styles.modalOverlay} pointerEvents="box-none">
+                <View style={styles?.modalOverlay} pointerEvents="box-none">
 
                     {/* Backdrop */}
                     <TouchableOpacity
@@ -543,7 +545,7 @@ export default function UserProfileScreen() {
 
                         {/* Body */}
                         <ScrollView
-                            style={styles.modalBody}
+                            style={styles?.modalBody}
                             contentContainerStyle={{ paddingBottom: 20 }}
                         >
                             {friendsLoading ? (

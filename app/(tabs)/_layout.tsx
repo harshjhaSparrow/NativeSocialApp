@@ -1,17 +1,16 @@
+import { Tabs, useRouter } from 'expo-router';
+import { Compass, Home, Map as MapIcon, MessageCircle, PlusSquare, User } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Text, Animated, TouchableWithoutFeedback, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Map as MapIcon, PlusSquare, MessageCircle, User, Compass } from 'lucide-react-native';
+import { Animated, Platform, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import LocationGuard from '../../components/LocationGuard';
+import { animation, colors, radii, shadows } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Tabs, useRouter } from 'expo-router';
-import { colors, radii, shadows, animation, spacing } from '../../constants/theme';
 
 // Individual tab icon with spring animation
 function AnimatedTabIcon({ focused, icon, badge }: { focused: boolean; icon: (color: string, size: number) => React.ReactNode; badge?: number | string }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1))?.current;
+  const opacity = useRef(new Animated.Value(0))?.current;
 
   useEffect(() => {
     Animated.spring(scale, {
@@ -29,16 +28,16 @@ function AnimatedTabIcon({ focused, icon, badge }: { focused: boolean; icon: (co
   const color = focused ? colors.primary : colors.textTertiary;
 
   return (
-    <View style={styles.iconWrapper}>
+    <View style={styles?.iconWrapper}>
       <Animated.View style={{ transform: [{ scale }] }}>
         {icon(color, 24)}
       </Animated.View>
       {/* Active dot indicator */}
-      <Animated.View style={[styles.activeDot, { opacity }]} />
+      <Animated.View style={[styles?.activeDot, { opacity }]} />
       {/* Badge */}
       {!!badge && Number(badge) > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{Number(badge) > 9 ? '9+' : badge}</Text>
+        <View style={styles?.badge}>
+          <Text style={styles?.badgeText}>{Number(badge) > 9 ? '9+' : badge}</Text>
         </View>
       )}
     </View>
@@ -47,14 +46,14 @@ function AnimatedTabIcon({ focused, icon, badge }: { focused: boolean; icon: (co
 
 // Floating Create button
 function CreateButton({ onPress }: { onPress: () => void }) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1))?.current;
 
   const handlePressIn = () => Animated.spring(scale, { toValue: 0.9, useNativeDriver: true, ...animation.spring.press }).start();
   const handlePressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, ...animation.spring.press }).start();
 
   return (
     <TouchableWithoutFeedback onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
-      <Animated.View style={[styles.createBtn, { transform: [{ scale }] }]}>
+      <Animated.View style={[styles?.createBtn, { transform: [{ scale }] }]}>
         <PlusSquare size={26} color={colors.white} />
       </Animated.View>
     </TouchableWithoutFeedback>
@@ -70,7 +69,7 @@ export default function TabLayout() {
     const checkUnread = async () => {
       if (!user) return;
       try {
-        const count = await api.chat.getUnreadCount(user.uid);
+        const count = await api.chat.getUnreadCount(user?.uid);
         setUnreadMessages(count);
       } catch (e) { }
     };

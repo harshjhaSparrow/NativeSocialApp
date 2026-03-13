@@ -50,7 +50,7 @@ export default function TermsOfServiceScreen() {
 
                 <Section title="1. Acceptance of Terms">
                     <Body>
-                        By accessing or using Orbyt ("the App"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the App. We may update these terms at any time, and continued use constitutes acceptance of any changes.
+                        By accessing or using Orbyt (&quot;the App&quot;), you agree to be bound by these Terms of Service. If you do not agree, please do not use the App. We may update these terms at any time, and continued use constitutes acceptance of any changes.
                     </Body>
                 </Section>
 
@@ -70,7 +70,7 @@ export default function TermsOfServiceScreen() {
                     <Bullet>Post content that is illegal, abusive, harassing, threatening, or discriminatory.</Bullet>
                     <Bullet>Share explicit sexual content, nudity, or graphic violence.</Bullet>
                     <Bullet>Spam, scam, or mislead other users.</Bullet>
-                    <Bullet>Collect or harvest other users' personal data without consent.</Bullet>
+                    <Bullet>Collect or harvest other users&apos; personal data without consent.</Bullet>
                     <Bullet>Attempt to reverse engineer, hack, or disrupt the App or its servers.</Bullet>
                 </Section>
 
@@ -82,7 +82,7 @@ export default function TermsOfServiceScreen() {
 
                 <Section title="6. Location Data">
                     <Body>
-                        Orbyt's core features require access to your device's location. Your location is used solely to power nearby discovery, map features, and meetup coordination. You can pause location sharing at any time from Settings.
+                        Orbyt&apos;s core features require access to your device&apos;s location. Your location is used solely to power nearby discovery, map features, and meetup coordination. You can pause location sharing at any time from Settings.
                     </Body>
                 </Section>
 
@@ -94,7 +94,7 @@ export default function TermsOfServiceScreen() {
 
                 <Section title="8. Limitation of Liability">
                     <Body>
-                        Orbyt is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the App, interactions with other users, or reliance on content posted by others. You use the App at your own risk.
+                        Orbyt is provided &quot;as is&quot; without warranties of any kind. We are not liable for any damages arising from your use of the App, interactions with other users, or reliance on content posted by others. You use the App at your own risk.
                     </Body>
                 </Section>
 

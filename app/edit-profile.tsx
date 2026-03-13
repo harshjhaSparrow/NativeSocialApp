@@ -32,18 +32,18 @@ export default function EditProfileScreen() {
         const fetchProfile = async () => {
             if (user) {
                 try {
-                    const profile = await api.profile.get(user.uid);
+                    const profile = await api.profile.get(user?.uid);
                     if (profile) {
-                        setDisplayName(profile.displayName || '');
-                        setPhotoURL(profile.photoURL || '');
-                        setInstagram(profile.instagramHandle || '');
-                        setBio(profile.bio || '');
-                        if (profile.dob) {
-                            setDob(profile.dob);
-                            setDateObj(new Date(profile.dob));
+                        setDisplayName(profile?.displayName || '');
+                        setPhotoURL(profile?.photoURL || '');
+                        setInstagram(profile?.instagramHandle || '');
+                        setBio(profile?.bio || '');
+                        if (profile?.dob) {
+                            setDob(profile?.dob);
+                            setDateObj(new Date(profile?.dob));
                         }
-                        setJobRole(profile.jobRole || '');
-                        setSelectedInterests(profile.interests || []);
+                        setJobRole(profile?.jobRole || '');
+                        setSelectedInterests(profile?.interests || []);
                     }
                 } catch (err) {
                     console.error(err);
@@ -58,20 +58,20 @@ export default function EditProfileScreen() {
 
     const handleImageUpload = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) {
+        if (permissionResult?.granted === false) {
             alert("You've refused to allow this app to access your photos!");
             return;
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions?.Images,
             allowsEditing: true,
             quality: 0.7,
             base64: true,
         });
 
-        if (!result.canceled && result.assets[0]?.base64) {
-            setPhotoURL(`data:image/jpeg;base64,${result.assets[0].base64}`);
+        if (!result?.canceled && result?.assets?.[0]?.base64) {
+            setPhotoURL(`data:image/jpeg;base64,${result?.assets?.[0]?.base64}`);
         }
     };
 
@@ -85,7 +85,7 @@ export default function EditProfileScreen() {
         setShowDatePicker(false);
         if (selectedDate) {
             setDateObj(selectedDate);
-            setDob(selectedDate.toISOString().split('T')[0]);
+            setDob(selectedDate.toISOString().split('T')?.[0]);
         }
     };
 
@@ -129,8 +129,8 @@ export default function EditProfileScreen() {
 
         try {
             const profileData: Partial<UserProfile> = {
-                uid: user.uid,
-                email: user.email,
+                uid: user?.uid,
+                email: user?.email,
                 displayName,
                 photoURL,
                 instagramHandle: instagram,
@@ -140,7 +140,7 @@ export default function EditProfileScreen() {
                 interests: selectedInterests,
             };
 
-            await api.profile.createOrUpdate(user.uid, profileData);
+            await api.profile.createOrUpdate(user?.uid, profileData);
             router.back();
         } catch (err) {
             console.error(err);
@@ -152,7 +152,7 @@ export default function EditProfileScreen() {
 
     if (initialLoading) {
         return (
-            <View style={styles.center}>
+            <View style={styles?.center}>
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
@@ -160,48 +160,48 @@ export default function EditProfileScreen() {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={styles?.container}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+            <View style={styles?.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles?.headerBtn}>
                     <ChevronLeft size={28} color="#94a3b8" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Edit Profile</Text>
+                <Text style={styles?.headerTitle}>Edit Profile</Text>
                 <TouchableOpacity
                     onPress={handleSave}
                     disabled={loading}
-                    style={[styles.headerBtn, { alignItems: 'flex-end', opacity: loading ? 0.5 : 1 }]}
+                    style={[styles?.headerBtn, { alignItems: 'flex-end', opacity: loading ? 0.5 : 1 }]}
                 >
                     {loading ? (
                         <ActivityIndicator size="small" color="#3b82f6" />
                     ) : (
-                        <Text style={styles.headerAction}>Save</Text>
+                        <Text style={styles?.headerAction}>Save</Text>
                     )}
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles?.scrollContent}>
                 {/* Photo */}
-                <View style={styles.photoSection}>
-                    <TouchableOpacity onPress={handleImageUpload} style={styles.photoContainer}>
-                        <View style={styles.avatar}>
+                <View style={styles?.photoSection}>
+                    <TouchableOpacity onPress={handleImageUpload} style={styles?.photoContainer}>
+                        <View style={styles?.avatar}>
                             {photoURL ? (
-                                <Image source={{ uri: photoURL }} style={styles.avatarImage} />
+                                <Image source={{ uri: photoURL }} style={styles?.avatarImage} />
                             ) : (
                                 <UserIcon size={64} color="#64748b" />
                             )}
                         </View>
-                        <View style={styles.cameraIconBadge}>
+                        <View style={styles?.cameraIconBadge}>
                             <Camera size={20} color="#fff" />
                         </View>
                     </TouchableOpacity>
-                    <Text style={styles.photoHint}>Tap icon to change photo</Text>
+                    <Text style={styles?.photoHint}>Tap icon to change photo</Text>
                 </View>
 
                 {/* Form Fields */}
-                <View style={styles.formSection}>
+                <View style={styles?.formSection}>
                     <Input
                         placeholder="Display Name"
                         value={displayName}
@@ -234,10 +234,10 @@ export default function EditProfileScreen() {
                         />
                     )}
 
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>BIO</Text>
+                    <View style={styles?.fieldGroup}>
+                        <Text style={styles?.fieldLabel}>BIO</Text>
                         <TextInput
-                            style={styles.bioInput}
+                            style={styles?.bioInput}
                             placeholder="Tell us about yourself..."
                             placeholderTextColor="#64748b"
                             value={bio}
@@ -255,19 +255,19 @@ export default function EditProfileScreen() {
                 </View>
 
                 {/* Interests */}
-                <View style={styles.interestsSection}>
-                    <Text style={styles.fieldLabel}>EDIT INTERESTS</Text>
-                    <View style={styles.tagsContainer}>
+                <View style={styles?.interestsSection}>
+                    <Text style={styles?.fieldLabel}>EDIT INTERESTS</Text>
+                    <View style={styles?.tagsContainer}>
                         {POPULAR_INTERESTS.map((interest: InterestTag) => {
-                            const isSelected = selectedInterests.includes(interest.id);
+                            const isSelected = selectedInterests.includes(interest?.id);
                             return (
                                 <TouchableOpacity
-                                    key={interest.id}
-                                    onPress={() => toggleInterest(interest.id)}
-                                    style={[styles.tag, isSelected ? styles.tagSelected : null]}
+                                    key={interest?.id}
+                                    onPress={() => toggleInterest(interest?.id)}
+                                    style={[styles?.tag, isSelected ? styles?.tagSelected : null]}
                                 >
-                                    <Text style={[styles.tagText, isSelected ? styles.tagTextSelected : null]}>
-                                        {interest.emoji} {interest.label}
+                                    <Text style={[styles?.tagText, isSelected ? styles?.tagTextSelected : null]}>
+                                        {interest?.emoji} {interest?.label}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -276,8 +276,8 @@ export default function EditProfileScreen() {
                 </View>
 
                 {error && (
-                    <View style={styles.errorBox}>
-                        <Text style={styles.errorText}>{error}</Text>
+                    <View style={styles?.errorBox}>
+                        <Text style={styles?.errorText}>{error}</Text>
                     </View>
                 )}
 

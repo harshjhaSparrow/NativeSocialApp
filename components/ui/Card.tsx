@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { colors, radii, spacing, shadows } from '../../constants/theme';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+import { colors, radii, shadows, spacing } from '../../constants/theme';
 
 type CardVariant = 'default' | 'elevated' | 'outlined' | 'ghost';
 

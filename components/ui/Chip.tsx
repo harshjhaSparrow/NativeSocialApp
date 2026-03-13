@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { Animated, TouchableWithoutFeedback, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, typography, radii, spacing, animation } from '../../constants/theme';
+import { Animated, StyleSheet, Text, TouchableWithoutFeedback, ViewStyle } from 'react-native';
+import { animation, colors, radii, spacing, typography } from '../../constants/theme';
 
 interface ChipProps {
     label: string;

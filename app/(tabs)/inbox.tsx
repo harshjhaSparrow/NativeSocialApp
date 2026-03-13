@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from "expo-router";
+/* eslint-disable react-hooks/exhaustive-deps */
 import * as Haptics from 'expo-haptics';
-import { MessageCircle, ChevronRight, Users, Calendar, Edit } from "lucide-react-native";
-import { useAuth } from "../../context/AuthContext";
-import { api } from "../../services/api";
-import { UserProfile, Message } from "../../types";
+import { useRouter, useFocusEffect } from "expo-router";
+import { Calendar, Edit, MessageCircle, Users } from "lucide-react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from "../../components/ui/Avatar";
 import EmptyState from "../../components/ui/EmptyState";
-import { colors, typography, spacing, radii } from "../../constants/theme";
+import { colors, radii, spacing, typography } from "../../constants/theme";
+import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
+import { Message, UserProfile } from "../../types";
 
 interface InboxItem { type: "direct" | "group"; partner?: UserProfile; groupId?: string; lastMessage: Message; unreadCount?: number; }
 
@@ -29,21 +30,41 @@ export default function InboxScreen() {
         finally { setLoading(false); setRefreshing(false); }
     };
 
-    useEffect(() => { fetchInbox(); }, [user]);
+    useFocusEffect(
+        useCallback(() => {
+            fetchInbox();
+        }, [user])
+    );
 
     useEffect(() => {
         if (!user) return;
         const unsub = api.chat.subscribe(user.uid, (newMsg: Message) => {
             setConversations(prev => {
-                let exists = false;
-                const updated = prev.map(conv => {
-                    const isMatch = newMsg.groupId ? conv.type === "group" && conv.groupId === newMsg.groupId
-                        : conv.type === "direct" && !!conv.partner?.uid && (newMsg.fromUid === conv.partner.uid || newMsg.toUid === conv.partner.uid);
-                    if (isMatch) { exists = true; return { ...conv, lastMessage: newMsg, unreadCount: newMsg.fromUid !== user.uid ? (conv.unreadCount || 0) + 1 : conv.unreadCount }; }
-                    return conv;
+                const existingIndex = prev.findIndex(conv => {
+                    if (newMsg.groupId) {
+                        return conv.type === "group" && conv.groupId === newMsg.groupId;
+                    } else {
+                        return conv.type === "direct" && conv.partner && (newMsg.fromUid === conv.partner.uid || newMsg.toUid === conv.partner.uid);
+                    }
                 });
-                if (exists) return updated.sort((a, b) => b.lastMessage.createdAt - a.lastMessage.createdAt);
-                fetchInbox(); return prev;
+
+                if (existingIndex > -1) {
+                    const existingConv = prev[existingIndex];
+                    const isIncoming = newMsg.fromUid !== user.uid;
+                    const updatedConv = {
+                        ...existingConv,
+                        lastMessage: newMsg,
+                        unreadCount: isIncoming ? (existingConv.unreadCount || 0) + 1 : existingConv.unreadCount,
+                    };
+                    const nextConvs = [...prev];
+                    nextConvs.splice(existingIndex, 1);
+                    nextConvs.unshift(updatedConv);
+                    return nextConvs;
+                } else {
+                    // New conversation, let's fetch from the server
+                    fetchInbox();
+                    return prev;
+                }
             });
         });
         return () => unsub();
